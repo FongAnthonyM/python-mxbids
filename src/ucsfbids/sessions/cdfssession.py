@@ -13,18 +13,15 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from baseobjects import BaseComposite
-from baseobjects.cachingtools import CachingObject, timed_keyless_cache
-from pathlib import Path
-from typing import Any
+from collections.abc import MutableMapping
+from typing import ClassVar, Any
 
 # Third-Party Packages #
-from cdfs import CDFS
 
 # Local Packages #
-from .session import Session
-from .exporters import SessionBIDSExporter
+from ..base import BaseImporter, BaseExporter
 from ..modalities import Modality, Anatomy, CT, IEEGCDFS
+from .session import Session
 
 
 # Definitions #
@@ -59,6 +56,14 @@ class CDFSSession(Session):
         kwargs: The keyword arguments for inheritance.
     """
 
+    # Class Attributes #
+    default_modalities: ClassVar[dict[str, tuple[type[Modality], dict[str, Any]]]] = {
+        "anat": Anatomy,
+        "ct": CT,
+        "ieeg": IEEGCDFS,
+    }
+
+    # Attributes #
     meta_information: dict[str, Any] = Session.meta_information.copy()
-    default_modalities: dict[str, type[Modality]] = {"anat": Anatomy, "ct": CT, "ieeg": IEEGCDFS}
-    default_exporters: dict[str, type] = {"BIDS": SessionBIDSExporter}
+    importers: MutableMapping[str, tuple[type[BaseImporter], dict[str, Any]]] = Session.importers.new_child()
+    exporters: MutableMapping[str, tuple[type[BaseExporter], dict[str, Any]]] = Session.exporters.new_child()
