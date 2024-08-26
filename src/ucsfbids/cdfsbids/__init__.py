@@ -13,4 +13,6 @@ __email__ = __email__
 
 # Imports #
 # Local Packages #
-from .session import Session
+from .ieegcdfscomponent import IEEGCDFSComponent
+from .ieegcdfs import IEEGCDFS
+from .cdfssession import CDFSSession

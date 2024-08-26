@@ -15,12 +15,11 @@ __email__ = __email__
 # Standard Libraries #
 from collections.abc import MutableMapping
 from collections import ChainMap
-import json
+from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
-from baseobjects.objects.dispatchableclass import DispatchableClass
 
 # Local Packages #
 from ..base import BaseBIDSDirectory, BaseImporter, BaseExporter
@@ -28,7 +27,7 @@ from ..base import BaseBIDSDirectory, BaseImporter, BaseExporter
 
 # Definitions #
 # Classes #
-class Modality(BaseBIDSDirectory, DispatchableClass):
+class Modality(BaseBIDSDirectory):
     """A base class which defines a Modality and dispatches a specific Modality subclass based on meta information.
 
     Class Attributes:
@@ -57,38 +56,28 @@ class Modality(BaseBIDSDirectory, DispatchableClass):
     """
 
     # Class Attributes #
-    register: dict[str, dict[str, type]] = {}
-    registration: bool = True
+    _module_: ClassVar[str | None] = "ucsfbids.modalities"
+
+    class_register: ClassVar[dict[str, dict[str, type]]] = {}
+    class_registration: ClassVar[bool] = True
+    default_meta_information: ClassVar[dict[str, Any]] = deepcopy(BaseBIDSDirectory.default_meta_information) | {
+        "Type": "Modality",
+    }
 
     # Class Methods #
     @classmethod
-    def register_class(cls, namespace: str | None = None, name: str | None = None) -> None:
-        """Registers this class with the given namespace and name.
-
-        Args:
-            namespace: The namespace of the subclass.
-            name: The name of the subclass.
-        """
-        super().register_class(namespace=namespace, name=name)
-        cls.meta_information.update(ModalityNamespace=cls.register_namespace, ModalityType=cls.register_name)
-
-    @classmethod
-    def get_class_information(
+    def generate_meta_information_path(
         cls,
         path: Path | str | None = None,
         name: str | None = None,
         parent_path: Path | str | None = None,
-        *args: Any,
-        **kwargs: Any,
-    ) -> tuple[str, str]:
+    ) -> Path:
         """Gets a class namespace and name from a given set of arguments.
 
         Args:
             path: The path to the session.
             name: The name of the session.
             parent_path: The path to the parent of the session.
-            *args: The arguments to get the namespace and name from.
-            **kwargs: The keyword arguments to get the namespace and name from.
 
         Returns:
             The namespace and name of the class.
@@ -107,11 +96,7 @@ class Modality(BaseBIDSDirectory, DispatchableClass):
         subject_name = path.parts[-3][4:]
         session_name = path.parts[-2][4:]
 
-        meta_info_path = path / f"sub-{subject_name}_ses-{session_name}_{name}-meta.json"
-        with meta_info_path.open("r") as file:
-            info = json.load(file)
-
-        return info["ModalityNamespace"], info["ModalityType"]
+        return path / f"sub-{subject_name}_ses-{session_name}_{name}_meta.json"
 
     # Attributes #
     subject_name: str | None = None
@@ -119,11 +104,6 @@ class Modality(BaseBIDSDirectory, DispatchableClass):
 
     importers: MutableMapping[str, tuple[type[BaseImporter], dict[str, Any]]] = ChainMap()
     exporters: MutableMapping[str, tuple[type[BaseExporter], dict[str, Any]]] = ChainMap()
-
-    meta_information: dict[str, Any] = {
-        "ModalityNamespace": "",
-        "ModalityType": "",
-    }
 
     # Properties #
     @property
@@ -135,6 +115,11 @@ class Modality(BaseBIDSDirectory, DispatchableClass):
     def full_name(self) -> str:
         """The full name of this Modality."""
         return f"sub-{self.subject_name}_ses-{self.session_name}"
+
+    @property
+    def meta_information_path(self) -> Path | None:
+        """The path to the meta information json file."""
+        return None if self._path is None else self._path / f"{self.full_name}_{self.name}_meta.json"
 
     # Magic Methods #
     # Construction/Destruction
@@ -180,7 +165,6 @@ class Modality(BaseBIDSDirectory, DispatchableClass):
         create: bool = False,
         build: bool = True,
         load: bool = True,
-        modalities_to_load: list[str] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
@@ -194,16 +178,16 @@ class Modality(BaseBIDSDirectory, DispatchableClass):
             load: Determines if the sessions will be loaded from the subject's directory.
             kwargs: The keyword arguments for inheritance if any.
         """
-        # Construct Parent #
-        super().construct(
-            path=path,
-            name=name,
-            parent_path=parent_path,
-            mode=mode,
-            **kwargs,
-        )
+        # Name and Path Resolution
+        if name is not None:
+            self.name = name
 
-        # Name and Path resolution
+        if path is not None:
+            self.path = Path(path)
+
+        if mode is not None:
+            self._mode = mode
+
         if self.path is not None:
             if name is None:
                 self.name = self.path.stem
@@ -221,3 +205,6 @@ class Modality(BaseBIDSDirectory, DispatchableClass):
                     self.create(build=build)
             elif load:
                 self.load()
+
+        # Construct Parent #
+        super().construct(**kwargs)

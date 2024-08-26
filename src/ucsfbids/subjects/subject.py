@@ -15,10 +15,12 @@ __email__ = __email__
 # Standard Libraries #
 from collections.abc import Iterable, MutableMapping
 from collections import ChainMap
+from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
+from baseobjects.objects import ClassNamespaceRegister
 
 # Local Packages #
 from ..base import BaseBIDSDirectory, BaseImporter, BaseExporter
@@ -48,54 +50,46 @@ class Subject(BaseBIDSDirectory):
         kwargs: The keyword arguments for inheritance if any.
     """
 
-    # @classmethod
-    # def get_class_information(
-    #     cls,
-    #     path: Path | str | None = None,
-    #     name: str | None = None,
-    #     parent_path: Path | str | None = None,
-    #     *args: Any,
-    #     **kwargs: Any,
-    # ) -> tuple[str, str]:
-    #     """Gets a class namespace and name from a given set of arguments.
-    #
-    #     Args:
-    #         path: The path to the session.
-    #         name: The name of the session.
-    #         parent_path: The path to the parent of the session.
-    #         *args: The arguments to get the namespace and name from.
-    #         **kwargs: The keyword arguments to get the namespace and name from.
-    #
-    #     Returns:
-    #         The namespace and name of the class.
-    #     """
-    #     if path is not None:
-    #         if not isinstance(path, Path):
-    #             path = Path(path)
-    #
-    #         if name is None:
-    #             name = path.stem[4:]
-    #     elif parent_path is not None and name is not None:
-    #         path = (parent_path if isinstance(parent_path, Path) else Path(parent_path)) / f"sub-{name}"
-    #     else:
-    #         raise ValueError("Either path or (parent_path and name) must be given to disptach class.")
-    #
-    #     meta_information_path = path / f"sub-{name}_meta.json"
-    #     with meta_information_path.open("r") as file:
-    #         info = json.load(file)
-    #
-    #     return info["SubjectNamespace"]
+    # Class Attributes #
+    _module_: ClassVar[str | None] = "ucsfbids.subjects"
+
+    class_register: ClassVar[dict[str, dict[str, type]]] = {}
+    class_registration: ClassVar[bool] = True
+    class_register_namespace: ClassVar[str | None] = "ucsfbids"
+    default_meta_information: ClassVar[dict[str, Any]] = deepcopy(BaseBIDSDirectory.default_meta_information) | {
+        "Type": "Subject",
+    }
+
+    # Class Methods #
+    @classmethod
+    def generate_meta_information_path(
+        cls,
+        path: Path | str | None = None,
+        name: str | None = None,
+        parent_path: Path | str | None = None,
+    ) -> Path:
+        if path is not None:
+            if not isinstance(path, Path):
+                path = Path(path)
+
+            if name is None:
+                name = path.stem[4:]
+        elif parent_path is not None and name is not None:
+            path = (parent_path if isinstance(parent_path, Path) else Path(parent_path)) / f"sub-{name}"
+        else:
+            raise ValueError("Either path or (parent_path and name) must be given to dispatch class.")
+
+        return path / f"sub-{name}_meta.json"
 
     # Attributes #
+    component_types_register: ClassNamespaceRegister = ClassNamespaceRegister()
+
     session_prefix: str = "S"
     session_digits: int = 4
 
     importers: MutableMapping[str, tuple[type[BaseImporter], dict[str, Any]]] = ChainMap()
     exporters: MutableMapping[str, tuple[type[BaseExporter], dict[str, Any]]] = ChainMap()
 
-    meta_information: dict[str, Any] = {
-        "SubjectNamespace": "",
-    }
     sessions: dict[str, Session]
 
     # Properties #
@@ -170,29 +164,32 @@ class Subject(BaseBIDSDirectory):
             load: Determines if the sessions will be loaded from the subject's directory.
             kwargs: The keyword arguments for inheritance if any.
         """
-        # Construct Parent #
-        super().construct(
-            path=path,
-            name=name,
-            parent_path=parent_path,
-            mode=mode,
-            **kwargs,
-        )
+        # Name and Path Resolution
+        if name is not None:
+            self.name = name
 
-        # Name and Path resolution
+        if path is not None:
+            self.path = Path(path)
+
+        if mode is not None:
+            self._mode = mode
+
         if self.path is not None:
             if name is None:
                 self.name = self.path.stem[4:]
         elif parent_path is not None and self.name is not None:
             self.path = (parent_path if isinstance(parent_path, Path) else Path(parent_path)) / self.directory_name
 
-        # Create or Load
-        if self.path is not None:
-            if not self.path.exists():
-                if create:
-                    self.create(build=build)
-            elif load:
-                self.load(sessions_to_load)
+        # Load
+        if self.path is not None and self.path.exists() and load:
+            self.load(sessions_to_load)
+
+        # Construct Parent #
+        super().construct(**kwargs)
+
+        # Create
+        if self.path is not None and not self.path.exists() and create:
+            self.create(build=build)
 
     def build(self) -> None:
         super().build()
@@ -242,8 +239,8 @@ class Subject(BaseBIDSDirectory):
 
     def create_session(
         self,
-        session: type,
         name: str | None = None,
+        session: type[Session] = Session,
         mode: str | None = None,
         create: bool = True,
         load: bool = False,
