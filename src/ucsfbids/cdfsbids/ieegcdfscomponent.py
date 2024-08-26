@@ -1,8 +1,8 @@
-"""ieegcdfs.py
+"""ieegcdfscomponent.py
 
 """
 # Package Header #
-from ....header import *
+from ..header import *
 
 # Header #
 __author__ = __author__
@@ -13,7 +13,7 @@ __email__ = __email__
 
 # Imports #
 # Standard Libraries #
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
 from baseobjects.composition import BaseComponent
@@ -25,6 +25,9 @@ from cdfs import BaseCDFS
 # Definitions #
 # Classes #
 class IEEGCDFSComponent(BaseComponent):
+    # Class Attributes #
+    _module_: ClassVar[str | None] = "ucsfbids.cdfsbids"
+
     # Attributes #
     cdfs_type: type[BaseCDFS] = BaseCDFS
     cdfs: BaseCDFS | None = None
@@ -67,6 +70,3 @@ class IEEGCDFSComponent(BaseComponent):
             The name of the contents file.
         """
         return f"{self._composite().full_name}_contents.sqlite3"
-
-
-

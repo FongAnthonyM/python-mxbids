@@ -1,6 +1,8 @@
 """basebidsdirectory.py
 
 """
+from email.policy import default
+
 # Package Header #
 from ..header import *
 
@@ -15,12 +17,16 @@ __email__ = __email__
 # Standard Libraries #
 from abc import abstractmethod
 from collections.abc import MutableMapping
+from copy import deepcopy
+from importlib import import_module
 import json
 from pathlib import Path
 from typing import ClassVar, Any
+from warnings import warn
 
 # Third-Party Packages #
-from baseobjects import BaseComposite
+from baseobjects.objects import ClassNamespaceRegister
+from baseobjects.composition import DispatchableComposite
 
 # Local Packages #
 from .baseimporter import BaseImporter
@@ -29,34 +35,111 @@ from .baseexporter import BaseExporter
 
 # Definitions #
 # Classes #
-class BaseBIDSDirectory(BaseComposite):
-    """A subject in the UCSF BIDS format.
+class BaseBIDSDirectory(DispatchableComposite):
+    """Base class for BIDS directories.
+
+    Class Attributes:
+        default_meta_information: The default meta information about the BIDS directory and how to load it.
 
     Attributes:
-        _path: The path to subject.
-        _is_open: Determines if this subject and its contents are open.
-        _mode: The file mode of this subject.
-        name: The name of this subject.
-        sessions: The session of the subject.
-
-    Args:
-        path: The path to the subject's directory.
-        name: The ID name of the subject.
-        parent_path: The parent path of this subject.
-        mode: The file mode to set this subject to.
-        create: Determines if this subject will be created if it does not exist.
-        load: Determines if the sessions will be loaded from the subject's directory.
-        init: Determines if this object will construct.
-        kwargs: The keyword arguments for inheritance if any.
+        _path: The path to the BIDS directory.
+        _mode: The file mode of the BIDS directory.
+        component_types_register: The register of component types.
+        name: The name of the BIDS directory.
+        importers: The importers of the BIDS directory.
+        exporters: The exporters of the BIDS directory.
+        _meta_information: The meta information of the BIDS directory.
     """
+
+    # Class Attributes #
+    default_meta_information: ClassVar[dict[str, Any]] = {
+        "Type": "",
+        "Version": "0.1.0",
+        "Python": {
+            "Module": "",
+            "ClassNamespace": "",
+            "Class": "",
+            "ComponentTypes": {
+                # "Name": {"Module": "", "Namespace": "", "Class": "", "Kwargs": {}}
+            },
+        }
+    }
+
+    # Class Methods #
+    # Construction/Destruction
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """The init when creating a subclass.
+
+        Args:
+            **kwargs: The keyword arguments for creating a subclass.
+        """
+        cls.default_meta_information = deepcopy(cls.default_meta_information)
+
+        super().__init_subclass__(**kwargs)
+
+    @classmethod
+    def register_class(cls, namespace: str | None = None, name: str | None = None) -> None:
+        """Registers this class with the given namespace and name.
+
+        Args:
+            namespace: The namespace of the subclass.
+            name: The name of the subclass.
+        """
+        module = cls._module_ if "_module_" in cls.__dict__ else cls.__module__
+        super().register_class(namespace=namespace, name=name)
+        cls.default_meta_information["Python"].update(
+            ClassNamespace=cls.class_register_namespace,
+            Class=cls.class_register_name,
+            Module=module[4:] if module.split(".")[0] == "src" else module,
+        )
+
+    @classmethod
+    def generate_meta_information_path(
+        cls,
+        path: Path | str | None = None,
+        name: str | None = None,
+        parent_path: Path | str | None = None,
+    ) -> Path:
+        raise NotImplementedError("This method needs to be implemented to dispatch the class correctly.")
+
+    @classmethod
+    def get_class_information(
+        cls,
+        path: Path | str | None = None,
+        name: str | None = None,
+        parent_path: Path | str | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> tuple[str, str, str | None]:
+        """Gets a class namespace and name from a given set of arguments.
+
+        Args:
+            path: The path to the session.
+            name: The name of the session.
+            parent_path: The path to the parent of the session.
+            *args: The arguments to get the namespace and name from.
+            **kwargs: The keyword arguments to get the namespace and name from.
+
+        Returns:
+            The namespace and name of the class.
+        """
+        meta_info_path = cls.generate_meta_information_path(path=path, name=name, parent_path=parent_path)
+        if not meta_info_path.exists():
+            info = cls.default_meta_information["Python"]
+        else:
+            with meta_info_path.open("r") as file:
+                info = json.load(file)["Python"]
+        return info["ClassNamespace"], info["Class"], info["Module"]
 
     # Attributes #
     _path: Path | None = None
     _mode: str = "r"
 
+    component_types_register: ClassNamespaceRegister
+
     name: str | None = None
 
-    meta_information: dict[str, Any] = {}
+    _meta_information: dict[str, Any] | None = None
 
     importers: MutableMapping[str, tuple[type[BaseImporter], dict[str, Any]]]
     exporters: MutableMapping[str, tuple[type[BaseExporter], dict[str, Any]]]
@@ -85,9 +168,17 @@ class BaseBIDSDirectory(BaseComposite):
         """The full name of this BIDS Directory object."""
 
     @property
-    def meta_information_path(self) -> Path:
+    def meta_information_path(self) -> Path | None:
         """The path to the meta information json file."""
-        return self._path / f"{self.full_name}_meta.json"
+        return None if self._path is None else self._path / f"{self.full_name}_meta.json"
+
+    @property
+    def meta_information(self) -> dict[str, Any]:
+        """The meta information of this BIDS Directory."""
+        if self._meta_information is None:
+            return self.default_meta_information.copy()
+        else:
+            return self._meta_information
 
     # Magic Methods #
     # Construction/Destruction
@@ -97,13 +188,14 @@ class BaseBIDSDirectory(BaseComposite):
         name: str | None = None,
         parent_path: Path | str | None = None,
         mode: str = "r",
+        component_kwargs: dict[str, dict[str, Any]] | None = None,
+        component_types: dict[str, tuple[type, dict[str, Any]]] | None = None,
+        components: dict[str, Any] | None = None,
         *,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.meta_information = self.meta_information.copy()
-
         self.importers = dict(self.importers)
         self.exporters = dict(self.exporters)
 
@@ -117,6 +209,9 @@ class BaseBIDSDirectory(BaseComposite):
                 name=name,
                 parent_path=parent_path,
                 mode=mode,
+                component_kwargs=component_kwargs,
+                component_types=component_types,
+                components=components,
                 **kwargs,
             )
 
@@ -128,6 +223,9 @@ class BaseBIDSDirectory(BaseComposite):
         name: str | None = None,
         parent_path: Path | str | None = None,
         mode: str | None = None,
+        component_kwargs: dict[str, dict[str, Any]] | None = None,
+        component_types: dict[str, tuple[type, dict[str, Any]]] | None = None,
+        components: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
@@ -150,7 +248,17 @@ class BaseBIDSDirectory(BaseComposite):
         if mode is not None:
             self._mode = mode
 
-        super().construct(**kwargs)
+        if self.meta_information_path is not None and self.meta_information_path.exists():
+            self.load_meta_information()
+
+        component_types = self.dispatch_component_types() | (component_types or {})
+
+        super().construct(
+            component_kwargs=component_kwargs,
+            component_types=component_types,
+            components=components,
+            **kwargs,
+        )
 
     def create(self, build: bool = True) -> None:
         self.path.mkdir(exist_ok=True)
@@ -158,16 +266,68 @@ class BaseBIDSDirectory(BaseComposite):
             self.build()
 
     def build(self) -> None:
+        self.update_meta_information_component_types()
         self.create_meta_information()
 
     def load(self, **kwargs: Any) -> None:
         self.load_meta_information()
 
+    # Components
+    def dispatch_component_types(self, *args: Any, **kwargs: Any) -> dict[str, tuple[type, dict[str, Any]]]:
+        """Dispatches component types using the given arguments.
+
+        Args:
+            *args: The arguments to use in dispatching.
+            **kwargs: The keyword arguments to use in dispatching.
+
+        Returns:
+            The name of the components, their types, and arguments.
+        """
+        component_types = {}
+        for name, info in self.meta_information["Python"]["ComponentTypes"].items():
+            if (item := self.component_types_register.get_class(info["Namespace"], info["Class"], None)) is None:
+                try:
+                    import_module(info["Module"])
+                except Exception as e:
+                    warn(f"Failed to import module {info['Module']} for component {name} with error: {e}")
+                else:
+                    item = self.component_types_register.get_class(info["Namespace"], info["Class"], None)
+            if item is None:
+                warn(f"Failed to find component {name} in the component register, skipping.")
+            else:
+                type_, d_kwargs = item
+                component_types[name] = (type_, d_kwargs | info["Kwargs"])
+        return component_types
+
+    def update_meta_information_component_types(self, component_kwargs: dict[str, Any] | None = None) -> None:
+        if component_kwargs is None:
+            component_kwargs = {}
+
+        for name, component in self.components.items():
+            cls = component.__class__
+            module = cls._module_ if "_module_" in cls.__dict__ else cls.__module__
+            if module.split(".")[0] == "src":
+                module = module[4:]
+
+            new_component = {
+                "Module": module,
+                "Namespace": module,
+                "Class": cls.__name__,
+            }
+            if (component := self.meta_information["Python"]["ComponentTypes"].get(name, None)) is None:
+                self.meta_information["Python"]["ComponentTypes"][name] = new_component
+                new_component["Kwargs"] = component_kwargs.get(name, {})
+            else:
+                component.update(new_component)
+                component["Kwargs"].update(component_kwargs.get(name, {}))
+
     # Meta Information
     def create_meta_information(self) -> None:
         """Creates meta information file and saves the meta information."""
+        if self._meta_information is None:
+            self._meta_information = deepcopy(self.default_meta_information)
         with self.meta_information_path.open(self._mode) as file:
-            json.dump(self.meta_information, file)
+            json.dump(self._meta_information, file)
 
     def load_meta_information(self) -> dict:
         """Loads the meta information from the file.
@@ -175,10 +335,15 @@ class BaseBIDSDirectory(BaseComposite):
         Returns:
             The modality meta information.
         """
-        self.meta_information.clear()
+        if self._meta_information is None:
+            self._meta_information = {}
+        else:
+            self._meta_information.clear()
+
         with self.meta_information_path.open("r") as file:
-            self.meta_information.update(json.load(file))
-        return self.meta_information
+            self._meta_information.update(json.load(file))
+
+        return self._meta_information
 
     def save_meta_information(self) -> None:
         """Saves the meta information to the file."""

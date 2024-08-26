@@ -15,9 +15,10 @@ __email__ = __email__
 # Standard Libraries #
 from collections.abc import MutableMapping
 from pathlib import Path
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
+from baseobjects.objects import ClassNamespaceRegister
 import pandas as pd
 
 # Local Packages #
@@ -57,10 +58,14 @@ class IEEG(Modality):
         kwargs: The keyword arguments for inheritance.
     """
 
-    # Attributes #
-    name: str = "ieeg"
+    # Class Attributes #
+    _module_: ClassVar[str | None] = "ucsfbids.modalities"
+    class_register_namespace: ClassVar[str | None] = "ucsfbids.ieeg"
 
-    meta_information: dict[str, Any] = Modality.meta_information.copy()
+    # Attributes #
+    component_types_register: ClassNamespaceRegister = ClassNamespaceRegister()
+
+    name: str = "ieeg"
 
     electrode_columns: list[str] = [
         "name",

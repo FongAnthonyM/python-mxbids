@@ -20,8 +20,9 @@ from typing import ClassVar, Any
 
 # Local Packages #
 from ..base import BaseImporter, BaseExporter
-from ..modalities import Modality, Anatomy, CT, IEEGCDFS
-from .session import Session
+from ..modalities import Modality, Anatomy, CT
+from ..sessions import Session
+from .ieegcdfs import IEEGCDFS
 
 
 # Definitions #
@@ -57,13 +58,13 @@ class CDFSSession(Session):
     """
 
     # Class Attributes #
+    _module_: ClassVar[str | None] = "ucsfbids.cdfsbids"
     default_modalities: ClassVar[dict[str, tuple[type[Modality], dict[str, Any]]]] = {
-        "anat": Anatomy,
-        "ct": CT,
-        "ieeg": IEEGCDFS,
+        "anat": (Anatomy, {}),
+        "ct": (CT, {}),
+        "ieeg": (IEEGCDFS, {}),
     }
 
     # Attributes #
-    meta_information: dict[str, Any] = Session.meta_information.copy()
     importers: MutableMapping[str, tuple[type[BaseImporter], dict[str, Any]]] = Session.importers.new_child()
     exporters: MutableMapping[str, tuple[type[BaseExporter], dict[str, Any]]] = Session.exporters.new_child()

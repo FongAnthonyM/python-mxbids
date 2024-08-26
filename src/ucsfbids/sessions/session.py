@@ -15,12 +15,12 @@ __email__ = __email__
 # Standard Libraries #
 from collections.abc import Iterable, MutableMapping
 from collections import ChainMap
-import json
+from copy import deepcopy
 from pathlib import Path
 from typing import ClassVar, Any
 
 # Third-Party Packages #
-from baseobjects.objects.dispatchableclass import DispatchableClass
+from baseobjects.objects import ClassNamespaceRegister
 
 # Local Packages #
 from ..base import BaseBIDSDirectory, BaseImporter, BaseExporter
@@ -29,7 +29,7 @@ from ..modalities import Modality
 
 # Definitions #
 # Classes #
-class Session(BaseBIDSDirectory, DispatchableClass):
+class Session(BaseBIDSDirectory):
     """A base class which defines a Session and dispatches a specific Session subclass based on meta information.
 
     Class Attributes:
@@ -58,43 +58,24 @@ class Session(BaseBIDSDirectory, DispatchableClass):
     """
 
     # Class Attributes #
-    register: dict[str, dict[str, type]] = {}
-    registration: bool = True
+    _module_: ClassVar[str | None] = "ucsfbids.sessions"
+
+    class_register: ClassVar[dict[str, dict[str, type]]] = {}
+    class_registration: ClassVar[bool] = True
+    class_register_namespace: ClassVar[str | None] = "ucsfbids"
+    default_meta_information: ClassVar[dict[str, Any]] = deepcopy(BaseBIDSDirectory.default_meta_information) | {
+        "Type": "Session",
+    }
     default_modalities: ClassVar[dict[str, tuple[type[Modality], dict[str, Any]]]] = {}
 
     # Class Methods #
     @classmethod
-    def register_class(cls, namespace: str | None = None, name: str | None = None) -> None:
-        """Registers this class with the given namespace and name.
-
-        Args:
-            namespace: The namespace of the subclass.
-            name: The name of the subclass.
-        """
-        super().register_class(namespace=namespace, name=name)
-        cls.meta_information.update(SessionNamespace=cls.register_namespace, SessionType=cls.register_name)
-
-    @classmethod
-    def get_class_information(
+    def generate_meta_information_path(
         cls,
         path: Path | str | None = None,
         name: str | None = None,
         parent_path: Path | str | None = None,
-        *args: Any,
-        **kwargs: Any,
-    ) -> tuple[str, str]:
-        """Gets a class namespace and name from a given set of arguments.
-
-        Args:
-            path: The path to the session.
-            name: The name of the session.
-            parent_path: The path to the parent of the session.
-            *args: The arguments to get the namespace and name from.
-            **kwargs: The keyword arguments to get the namespace and name from.
-
-        Returns:
-            The namespace and name of the class.
-        """
+    ) -> Path:
         if path is not None:
             if not isinstance(path, Path):
                 path = Path(path)
@@ -108,24 +89,16 @@ class Session(BaseBIDSDirectory, DispatchableClass):
 
         parent_name = path.parts[-2][4:]
 
-        meta_info_path = path / f"sub-{parent_name}_ses-{name}_meta.json"
-        if not meta_info_path.exists():
-            info = cls.meta_information
-        else:
-            with meta_info_path.open("r") as file:
-                info = json.load(file)
-        return info["SessionNamespace"], info["SessionType"]
+        return path / f"sub-{parent_name}_ses-{name}_meta.json"
 
     # Attributes #
+    component_types_register: ClassNamespaceRegister = ClassNamespaceRegister()
+
     subject_name: str | None = None
 
     importers: MutableMapping[str, tuple[type[BaseImporter], dict[str, Any]]] = ChainMap()
     exporters: MutableMapping[str, tuple[type[BaseExporter], dict[str, Any]]] = ChainMap()
 
-    meta_information: dict[str, Any] = {
-        "SessionNamespace": "",
-        "SessionType": "",
-    }
     modalities: dict[str, Any] = {}
 
     # Properties #
@@ -200,16 +173,16 @@ class Session(BaseBIDSDirectory, DispatchableClass):
             load: Determines if the sessions will be loaded from the subject's directory.
             kwargs: The keyword arguments for inheritance if any.
         """
-        # Construct Parent #
-        super().construct(
-            path=path,
-            name=name,
-            parent_path=parent_path,
-            mode=mode,
-            **kwargs,
-        )
+        # Name and Path Resolution
+        if name is not None:
+            self.name = name
 
-        # Name and Path resolution
+        if path is not None:
+            self.path = Path(path)
+
+        if mode is not None:
+            self._mode = mode
+
         if self.path is not None:
             if name is None:
                 self.name = self.path.stem[4:]
@@ -219,14 +192,19 @@ class Session(BaseBIDSDirectory, DispatchableClass):
         if self.path is not None:
             self.subject_name = self.path.parts[-2][4:]
 
-        # Create or Load
-        if self.path is not None:
-            if not self.path.exists():
-                self.construct_modalities()
-                if create:
-                    self.create(build=build)
-            elif load:
-                self.load(modalities_to_load)
+        # Load
+        if self.path is not None and self.path.exists():
+            if load:
+                self.load()
+        elif create:
+            self.construct_modalities()
+
+        # Construct Parent #
+        super().construct(**kwargs)
+
+        # Create
+        if self.path is not None and not self.path.exists() and create:
+            self.create(build=build)
 
     def build(self) -> None:
         super().build()
@@ -271,8 +249,8 @@ class Session(BaseBIDSDirectory, DispatchableClass):
 
     def create_modality(
         self,
-        modality: type,
-        name: str | None = None,
+        name: str,
+        modality: type[Modality] = Modality,
         mode: str | None = None,
         create: bool = True,
         load: bool = False,

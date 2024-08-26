@@ -1,8 +1,8 @@
-"""ieegcdfs.py
+"""ieegcdfscomponent.py
 
 """
 # Package Header #
-from ...header import *
+from ..header import *
 
 # Header #
 __author__ = __author__
@@ -18,9 +18,9 @@ from typing import ClassVar, Any
 # Third-Party Packages #
 
 # Local Packages #
-from ...base import BaseImporter, BaseExporter
-from .ieeg import IEEG
-from .components.ieegcdfs import IEEGCDFSComponent
+from ..base import BaseImporter, BaseExporter
+from ..modalities import IEEG
+from .ieegcdfscomponent import IEEGCDFSComponent
 
 
 # Definitions #
@@ -56,13 +56,12 @@ class IEEGCDFS(IEEG):
     """
 
     # Class Attributes #
+    _module_: ClassVar[str | None] = "ucsfbids.cdfsbids"
     default_component_types: ClassVar[dict[str, tuple[type, dict[str, Any]]]] = {
         "cdfs": (IEEGCDFSComponent, {}),
     }
 
     # Attributes #
-    meta_information: dict[str, Any] = IEEG.meta_information.copy()
-
     importers: dict[str, tuple[type[BaseImporter], dict[str, Any]]] = {}
     exporters: dict[str, tuple[type[BaseExporter], dict[str, Any]]] = {}
 

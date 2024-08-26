@@ -15,4 +15,3 @@ __email__ = __email__
 # Local Packages #
 from .components import *
 from .ieeg import IEEG
-from .ieegcdfs import IEEGCDFS

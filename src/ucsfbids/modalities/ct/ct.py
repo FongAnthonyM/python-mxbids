@@ -14,9 +14,10 @@ __email__ = __email__
 # Imports #
 # Standard Libraries #
 from collections.abc import MutableMapping
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
+from baseobjects.objects import ClassNamespaceRegister
 
 # Local Packages #
 from ...base import BaseImporter, BaseExporter
@@ -55,10 +56,14 @@ class CT(Modality):
         kwargs: The keyword arguments for inheritance.
     """
 
-    # Attributes #
-    name: str = "ct"
+    # Class Attributes #
+    _module_: ClassVar[str | None] = "ucsfbids.modalities"
+    class_register_namespace: ClassVar[str | None] = "ucsfbids.ct"
 
-    meta_information: dict[str, Any] = Modality.meta_information.copy()
+    # Attributes #
+    component_types_register: ClassNamespaceRegister = ClassNamespaceRegister()
+
+    name: str = "ct"
 
     importers: MutableMapping[str, tuple[type[BaseImporter], dict[str, Any]]] = Modality.importers.new_child()
     exporters: MutableMapping[str, tuple[type[BaseExporter], dict[str, Any]]] = Modality.exporters.new_child()

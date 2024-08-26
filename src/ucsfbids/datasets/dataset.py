@@ -1,4 +1,4 @@
-"""subject.py
+"""dataset.py
 
 """
 # Package Header #
@@ -15,11 +15,13 @@ __email__ = __email__
 # Standard Libraries #
 from collections.abc import Iterable, MutableMapping
 from collections import ChainMap
+from copy import deepcopy
 from pathlib import Path
 import json
-from typing import Any
+from typing import ClassVar, Any
 
 # Third-Party Packages #
+from baseobjects.objects import ClassNamespaceRegister
 import pandas as pd
 
 # Local Packages #
@@ -30,18 +32,41 @@ from ..subjects import Subject
 # Definitions #
 # Classes #
 class Dataset(BaseBIDSDirectory):
+    # Class Attributes #
+    _module_: ClassVar[str | None] = "ucsfbids.datasets"
+
+    class_register: ClassVar[dict[str, dict[str, type]]] = {}
+    class_registration: ClassVar[bool] = True
+    class_register_namespace: ClassVar[str | None] = "ucsfbids"
+    default_meta_information: ClassVar[dict[str, Any]] = deepcopy(BaseBIDSDirectory.default_meta_information) | {
+        "Type": "Dataset",
+    }
+
+    # Class Methods #
+    @classmethod
+    def generate_meta_information_path(
+        cls,
+        path: Path | str | None = None,
+        name: str | None = None,
+        parent_path: Path | str | None = None,
+    ) -> Path:
+        if path is not None:
+            if not isinstance(path, Path):
+                path = Path(path)
+
+        else:
+            raise ValueError("path must be given to dispatch class.")
+
+        return path / f"dataset_meta.json"
 
     # Attributes #
+    component_types_register: ClassNamespaceRegister = ClassNamespaceRegister()
+
     subject_prefix: str = "S"
     subject_digits: int = 4
 
     importers: MutableMapping[str, tuple[type[BaseImporter], dict[str, Any]]] = ChainMap()
     exporters: MutableMapping[str, tuple[type[BaseExporter], dict[str, Any]]] = ChainMap()
-
-    meta_information: dict[str, Any] = {
-        "DatasetNamespace": "",
-        "DatasetType": "",
-    }
 
     description: dict[str, Any] = {
         "Name": "Default name, should be updated",
@@ -58,12 +83,17 @@ class Dataset(BaseBIDSDirectory):
     @property
     def directory_name(self) -> str:
         """The directory name of this Dataset."""
-        return self.name
+        return self.path.stem
 
     @property
     def full_name(self) -> str:
         """The full name of this Dataset."""
         return self.name
+
+    @property
+    def meta_information_path(self) -> Path:
+        """The path to the meta information json file."""
+        return self._path / f"dataset_meta.json"
 
     @property
     def description_path(self) -> Path:
@@ -143,22 +173,25 @@ class Dataset(BaseBIDSDirectory):
             load: Determines if the sessions will be loaded from the subject's directory.
             kwargs: The keyword arguments for inheritance if any.
         """
-        # Construct Parent #
-        super().construct(
-            path=path,
-            name=name,
-            parent_path=parent_path,
-            mode=mode,
-            **kwargs,
-        )
+        if name is not None:
+            self.name = name
 
-        # Create or Load
-        if self.path is not None:
-            if not self.path.exists():
-                if create:
-                    self.create(build=build)
-            elif load:
-                self.load(subjects_to_load)
+        if path is not None:
+            self.path = Path(path)
+
+        if mode is not None:
+            self._mode = mode
+
+        # Load
+        if self.path is not None and self.path.exists() and load:
+            self.load(subjects_to_load)
+
+        # Construct Parent #
+        super().construct(**kwargs)
+
+        # Create
+        if self.path is not None and not self.path.exists() and create:
+            self.create(build=build)
 
     def build(self) -> None:
         super().build()
@@ -177,6 +210,7 @@ class Dataset(BaseBIDSDirectory):
     # Description
     def create_description(self) -> None:
         """Creates description file and saves the description."""
+        self.description["Name"] = self.name
         with self.description_path.open(self._mode) as file:
             json.dump(self.description, file)
 
@@ -189,10 +223,12 @@ class Dataset(BaseBIDSDirectory):
         self.description.clear()
         with self.description_path.open("r") as file:
             self.description.update(json.load(file))
+        self.name = self.description["Name"]
         return self.description
 
     def save_description(self) -> None:
         """Saves the description to the file."""
+        self.description["Name"] = self.name
         with self.description_path.open(self._mode) as file:
             json.dump(self.description, file)
 
@@ -269,10 +305,11 @@ class Dataset(BaseBIDSDirectory):
 
     def create_subject(
         self,
-        subject: type[Subject],
         name: str | None = None,
+        subject: type[Subject] = Subject,
         mode: str | None = None,
         create: bool = True,
+        load: bool = False,
         **kwargs: Any,
     ) -> Subject:
         """Create a new session for this subject with a given session type and arguments.
@@ -298,6 +335,7 @@ class Dataset(BaseBIDSDirectory):
             parent_path=self.path,
             mode=mode,
             create=create,
+            load=load,
             **kwargs,
         )
         return new_subject
