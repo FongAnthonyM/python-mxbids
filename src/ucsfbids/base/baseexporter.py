@@ -1,6 +1,7 @@
 """baseexporter.py
-
+A base class for exporting from the UCSFBIDS format.
 """
+
 # Package Header #
 from ..header import *
 
@@ -27,6 +28,26 @@ from baseobjects import BaseObject
 # Definitions #
 # Classes #
 class BaseExporter(BaseObject):
+    """A base class for exporting from the UCSFBIDS format.
+
+    Attributes:
+        exporter_name: The name of the exporter.
+        export_file_names: The set of file names to export.
+        export_exclude_names: The set of file names to exclude from export.
+        default_type: The default type for the exporter.
+        name_map: A mapping of names.
+        type_map: A mapping of types.
+        bids_object: The UCSFBIDS object to export.
+
+    Args:
+        bids_object: The UCSFBIDS object to export.
+        files_names: The set of file names to export.
+        exclude_names: The set of file names to exclude from export.
+        name_map: A mapping of names.
+        type_map: A mapping of types.
+        init: Determines if the object will construct. Defaults to True.
+        **kwargs: Additional keyword arguments.
+    """
 
     # Attributes #
     exporter_name: str
@@ -90,7 +111,12 @@ class BaseExporter(BaseObject):
         """Constructs this object.
 
         Args:
-            kwargs: The keyword arguments for inheritance if any.
+            bids_object: The UCSFBIDS object to export.
+            files_names: The set of file names to export.
+            exclude_names: The set of file names to exclude from export.
+            name_map: A mapping of names.
+            type_map: A mapping of types.
+            **kwargs: Additional keyword arguments.
         """
         if bids_object is not None:
             self.bids_object = bids_object
@@ -113,6 +139,13 @@ class BaseExporter(BaseObject):
         super().construct(**kwargs)
 
     def export_files(self, path: Path, name: str | None = None, files: set[str, ...] | None = None) -> None:
+        """Exports files to the specified path.
+
+        Args:
+            path: The destination root path for the files to be exported to.
+            name: The new name for the exported files. Defaults to None, retaining its name.
+            files: The set of file names to export. Defaults to None.
+        """
         if files is None:
             files = self.export_file_names
 
@@ -127,4 +160,11 @@ class BaseExporter(BaseObject):
 
     @abstractmethod
     def execute_export(self, path: Path, name: str | None = None, **kwargs: Any) -> None:
+        """Abstract method to execute the export process.
+
+        Args:
+            path: The destination root path for the exported files.
+            name: The new name for the exported files. Defaults to None, retaining its name.
+            **kwargs: Additional keyword arguments.
+        """
         pass

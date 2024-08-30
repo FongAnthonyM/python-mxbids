@@ -44,7 +44,7 @@ class SessionImporter(BaseImporter):
                 importer, i_kwargs = modality.importers.get(i_name, (None, {}))
 
             if importer is None:
-                importer, i_kwargs = self.default_type
+                importer, i_kwargs = self.default_inner_importer
 
             importer(bids_object=modality, **i_kwargs).execute_import(path)
 

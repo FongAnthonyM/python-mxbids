@@ -68,7 +68,6 @@ def create_coords(_, new_path):
     coordsystem_json = {"iEEGCoordinateSystem": "ACPC", "iEEGCoordinateUnits": "mm"}
     with open(new_path, "w") as f:
         json.dump(coordsystem_json, f)
-    pass
 
 
 # Classes #

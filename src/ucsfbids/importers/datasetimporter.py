@@ -48,7 +48,7 @@ class DatasetImporter(BaseImporter):
                 importer, i_kwargs = subject.importers.get(i_name, (None, {}))
 
             if importer is None:
-                importer, i_kwargs = self.default_type
+                importer, i_kwargs = self.default_inner_importer
 
             importer(bids_object=subject, **i_kwargs).execute_import(path)
 
