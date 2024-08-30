@@ -80,6 +80,5 @@ if __name__ == "__main__":
         create=True,
         load=False,
     )
-    dataset.create_importer(
-        "Pia", Path("~/pia").expanduser(), subjects=SUBJECTS
-    ).execute_import(source_patients=SUBJECTS_ROOT)
+    dataset.create_importer("Pia", Path("~/pia").expanduser(),
+                            subjects=SUBJECTS).execute_import(source_patients=SUBJECTS_ROOT)

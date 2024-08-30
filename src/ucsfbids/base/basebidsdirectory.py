@@ -1,8 +1,6 @@
 """basebidsdirectory.py
-
+A base class for UCSFBIDS directories.
 """
-from email.policy import default
-
 # Package Header #
 from ..header import *
 
@@ -36,7 +34,7 @@ from .baseexporter import BaseExporter
 # Definitions #
 # Classes #
 class BaseBIDSDirectory(DispatchableComposite):
-    """Base class for BIDS directories.
+    """A base class for UCSFBIDS directories.
 
     Class Attributes:
         default_meta_information: The default meta information about the BIDS directory and how to load it.
@@ -351,59 +349,114 @@ class BaseBIDSDirectory(DispatchableComposite):
             json.dump(self.meta_information, file)
 
     # Import/Export
-    def create_importer(self, type_: str, src_root: Path | None, **kwargs: Any) -> BaseImporter:
-        importer, d_kwargs = self.importers[type_]
-        return importer(dataset=self, src_root=src_root, **(d_kwargs | kwargs))
+    def create_importer(self, name: str, **kwargs: Any) -> BaseImporter:
+        """Creates an importer.
+
+        Args:
+            name: The name of the importer to create.
+            **kwargs: Additional keyword arguments for the importer.
+
+        Returns:
+            The created importer.
+        """
+        importer, d_kwargs = self.importers[name]
+        return importer(dataset=self, **(d_kwargs | kwargs))
 
     def add_importer(
         self,
-        type_: str,
+        name: str,
         importer: type[BaseImporter],
         kwargs: dict[str, Any] | None = None,
         overwrite: bool = False,
     ) -> None:
-        if type_ not in self.importers or overwrite:
-            self.importers[type_] = (importer, kwargs)
-            
+        """Adds an importer to this object.
+
+        Args:
+            name: The name of the importer to add.
+            importer: The importer class to add.
+            kwargs: Additional keyword arguments for the importer. Defaults to None.
+            overwrite: Determines if an existing importer should be overridden. Defaults to False.
+        """
+        if name not in self.importers or overwrite:
+            self.importers[name] = (importer, kwargs)
+
     def require_importer(
         self,
-        type_: str,
+        name: str,
         importer: type[BaseImporter],
         kwargs: dict[str, Any] | None = None,
         overwrite: bool = False,
     ) -> BaseImporter:
-        importer_, d_kwargs = self.importers.get(type_, (None, {}))
+        """Gets a specified importer if it exists, creating it if necessary.
+
+        Args:
+            name: The name of the importer to get.
+            importer: The importer class to get.
+            kwargs: Additional keyword arguments for the importer. Defaults to None.
+            overwrite: Determines if an existing importer should be overridden. Defaults to False.
+
+        Returns:
+            The required importer.
+        """
+        importer_, d_kwargs = self.importers.get(name, (None, {}))
         if importer_ is None or overwrite:
-            self.importers[type_] = (importer, kwargs)
+            self.importers[name] = (importer, kwargs)
             importer_ = importer
 
         return importer_(self, **(d_kwargs | kwargs))
 
-    def create_exporter(self, type_: str, **kwargs: Any) -> BaseExporter:
-        exporter, d_kwargs = self.exporters[type_]
+    def create_exporter(self, name: str, **kwargs: Any) -> BaseExporter:
+        """Creates an exporter.
+
+        Args:
+            name: The name of the exporter to create.
+            **kwargs: Additional keyword arguments for the exporter.
+
+        Returns:
+            BaseExporter: The created exporter.
+        """
+        exporter, d_kwargs = self.exporters[name]
         return exporter(self, **(d_kwargs | kwargs))
 
     def add_exporter(
         self,
-        type_: str,
+        name: str,
         exporter: type[BaseExporter],
         kwargs: dict[str, Any] | None = None,
         overwrite: bool = False,
     ) -> None:
-        if type_ not in self.exporters or overwrite:
-            self.exporters[type_] = (exporter, kwargs)
-            
+        """Adds an exporter to this object.
+
+        Args:
+            name: The name of the importer to add.
+            exporter: The exporter class to add.
+            kwargs: Additional keyword arguments for the importer. Defaults to None.
+            overwrite: Determines if an existing importer should be overridden. Defaults to False.
+        """
+        if name not in self.exporters or overwrite:
+            self.exporters[name] = (exporter, kwargs)
+
     def require_exporter(
         self,
-        type_: str,
+        name: str,
         exporter: type[BaseExporter],
         kwargs: dict[str, Any] | None = None,
         overwrite: bool = False,
     ) -> BaseExporter:
-        exporter_, d_kwargs = self.exporters.get(type_, (None, {}))
+        """Gets a specified exporter if it exists, creating it if necessary.
+
+        Args:
+            name: The name of the importer to add.
+            exporter: The exporter class to add.
+            kwargs: Additional keyword arguments for the importer. Defaults to None.
+            overwrite: Determines if an existing importer should be overridden. Defaults to False.
+
+        Returns:
+            The required exporter.
+        """
+        exporter_, d_kwargs = self.exporters.get(name, (None, {}))
         if exporter_ is None or overwrite:
-            self.exporters[type_] = (exporter, kwargs)
+            self.exporters[name] = (exporter, kwargs)
             exporter_ = exporter
 
         return exporter_(self, **(d_kwargs | kwargs))
-    
