@@ -1,6 +1,7 @@
 """dataset.py
-
+A BIDS Dataset.
 """
+
 # Package Header #
 from ..header import *
 
@@ -32,6 +33,40 @@ from ..subjects import Subject
 # Definitions #
 # Classes #
 class Dataset(BaseBIDSDirectory):
+    """A BIDS Dataset.
+
+    Class Attributes:
+        _module_: The module name to use in class dispatching.
+        class_register: The class register.
+        class_registration: Determines if this class and its subclasses will be registered.
+        class_register_namespace: The namespace of this class for class registration.
+        default_meta_information: Default metadata information for the dataset.
+        default_description: Default description for the dataset.
+
+    Attributes:
+        component_types_register: Register for component types.
+        subject_prefix: Prefix for subject IDs.
+        subject_digits: Number of digits for subject IDs.
+        importers: Importers for the dataset.
+        exporters: Exporters for the dataset.
+        _description: Description of the dataset.
+        participant_fields: Fields for participants.
+        participants: DataFrame containing participant information.
+        subjects: Dictionary of subjects in the dataset.
+
+    Args:
+        path: The path to the dataset's directory.
+        name: The name of the dataset.
+        parent_path: The parent path of this dataset.
+        mode: The file mode to set this dataset to.
+        create: Determines if the dataset will be created if it does not exist.
+        build: Determines if the dataset will be built after creation.
+        load: Determines if the dataset will be load.
+        subjects_to_load: List of subjects to load.
+        init: Determines if the object will construct. Defaults to True.
+        **kwargs: Additional keyword arguments.
+    """
+
     # Class Attributes #
     _module_: ClassVar[str | None] = "ucsfbids.datasets"
 
@@ -40,6 +75,11 @@ class Dataset(BaseBIDSDirectory):
     class_register_namespace: ClassVar[str | None] = "ucsfbids"
     default_meta_information: ClassVar[dict[str, Any]] = deepcopy(BaseBIDSDirectory.default_meta_information) | {
         "Type": "Dataset",
+    }
+    default_description: ClassVar[dict[str, Any]] = {
+        "Name": "Default name, should be updated",
+        "BIDSVersion": "1.6.0",
+        "DatasetType": "raw",
     }
 
     # Class Methods #
@@ -50,10 +90,19 @@ class Dataset(BaseBIDSDirectory):
         name: str | None = None,
         parent_path: Path | str | None = None,
     ) -> Path:
+        """Generates the path for the meta information file.
+
+        Args:
+            path: The path to the dataset.
+            name: The name of the dataset.
+            parent_path: The path to the parent of the dataset.
+
+        Returns:
+            Path: The path to the meta information file.
+        """
         if path is not None:
             if not isinstance(path, Path):
                 path = Path(path)
-
         else:
             raise ValueError("path must be given to dispatch class.")
 
@@ -68,15 +117,11 @@ class Dataset(BaseBIDSDirectory):
     importers: MutableMapping[str, tuple[type[BaseImporter], dict[str, Any]]] = ChainMap()
     exporters: MutableMapping[str, tuple[type[BaseExporter], dict[str, Any]]] = ChainMap()
 
-    description: dict[str, Any] = {
-        "Name": "Default name, should be updated",
-        "BIDSVersion": "1.6.0",
-        "DatasetType": "raw",
-    }
+    _description: dict[str, Any] | None = None
 
     participant_fields: dict[str, Any] = {}
     participants: pd.DataFrame | None = None
-    
+
     subjects: dict[str, Subject]
 
     # Properties #
@@ -99,6 +144,14 @@ class Dataset(BaseBIDSDirectory):
     def description_path(self) -> Path:
         """The path to the description json file."""
         return self._path / f"dataset_description.json"
+
+    @property
+    def description(self) -> dict[str, Any]:
+        """The description of the dataset."""
+        if self._description is None:
+            return self.default_description.copy()
+        else:
+            return self._description
 
     @property
     def participant_fields_path(self) -> Path:
@@ -165,12 +218,14 @@ class Dataset(BaseBIDSDirectory):
         """Constructs this object.
 
         Args:
-            path: The path to the subject's directory.
-            name: The ID name of the subject.
-            parent_path: The parent path of this subject.
-            mode: The file mode to set this subject to.
-            create: Determines if this subject will be created if it does not exist.
-            load: Determines if the sessions will be loaded from the subject's directory.
+           path: The path to the dataset's directory.
+            name: The name of the dataset.
+            parent_path: The parent path of this dataset.
+            mode: The file mode to set this dataset to.
+            create: Determines if the dataset will be created if it does not exist.
+            build: Determines if the dataset will be built after creation.
+            load: Determines if the dataset will be load.
+            subjects_to_load: List of subjects to load.
             kwargs: The keyword arguments for inheritance if any.
         """
         if name is not None:
@@ -194,6 +249,7 @@ class Dataset(BaseBIDSDirectory):
             self.create(build=build)
 
     def build(self) -> None:
+        """Builds the dataset."""
         super().build()
         self.create_description()
 
@@ -204,15 +260,25 @@ class Dataset(BaseBIDSDirectory):
         load: bool = True,
         **kwargs: Any,
     ) -> None:
+        """Loads the dataset.
+
+        Args:
+            names: Names of subjects to load.
+            mode: File mode to set the subjects to.
+            load: Determines if the subjects will be loaded.
+            kwargs: Additional keyword arguments.
+        """
         super().load()
         self.load_subjects(names, mode, load)
 
     # Description
     def create_description(self) -> None:
         """Creates description file and saves the description."""
-        self.description["Name"] = self.name
+        if self._description is None:
+            self._description = deepcopy(self.default_description)
+        self._description["Name"] = self.name
         with self.description_path.open(self._mode) as file:
-            json.dump(self.description, file)
+            json.dump(self._description, file)
 
     def load_description(self) -> dict:
         """Loads the description from the file.
@@ -220,11 +286,17 @@ class Dataset(BaseBIDSDirectory):
         Returns:
             The dataset description.
         """
-        self.description.clear()
+        if self._description is None:
+            self._description = {}
+        else:
+            self._description.clear()
+
         with self.description_path.open("r") as file:
-            self.description.update(json.load(file))
-        self.name = self.description["Name"]
-        return self.description
+            self._description.update(json.load(file))
+
+        self.name = self._description["Name"]
+
+        return self._description
 
     def save_description(self) -> None:
         """Saves the description to the file."""
@@ -277,7 +349,13 @@ class Dataset(BaseBIDSDirectory):
 
     # Subject
     def load_subjects(self, names: Iterable[str] | None = None, mode: str | None = None, load: bool = True) -> None:
-        """Loads all subjects in this dataset."""
+        """Loads all subjects in this dataset.
+
+        Args:
+            names: Names of subjects to load.
+            mode: File mode to set the subjects to.
+            load: Determines if the subjects will be loaded.
+        """
         m = self._mode if mode is None else mode
         self.subjects.clear()
 
@@ -294,8 +372,12 @@ class Dataset(BaseBIDSDirectory):
     def generate_latest_subject_name(self, prefix: str | None = None, digits: int | None = None) -> str:
         """Generates a subject name for a new latest subject.
 
+        Args:
+            prefix: Prefix for the subject name.
+            digits: Number of digits for the subject name.
+
         Returns:
-            The name of the latest session to create.
+            str: The name of the latest session to create.
         """
         if prefix is None:
             prefix = self.subject_prefix
@@ -312,17 +394,18 @@ class Dataset(BaseBIDSDirectory):
         load: bool = False,
         **kwargs: Any,
     ) -> Subject:
-        """Create a new session for this subject with a given session type and arguments.
+        """Create a new subject for this dataset with a given subject type and arguments.
 
         Args:
-            session: The type of session to create.
-            name: The name of the new session, defaults to the latest generated name.
-            mode: The file mode to set the session to, defaults to the subject's mode.
-            create: Determines if the session will create its contents.
-            **kwargs: The keyword arguments for the session.
+            name: The name of the new subject, defaults to the latest generated name.
+            subject: The type of subject to create.
+            mode: The file mode to set the subject to, defaults to the dataset's mode.
+            create: Determines if the subject will create its contents.
+            load: Determines if the subject will load its contents.
+            kwargs: The keyword arguments for the subject.
 
         Returns:
-            The newly created session.
+            Subject: The newly created session.
         """
         if name is None:
             name = self.generate_latest_subject_name()
