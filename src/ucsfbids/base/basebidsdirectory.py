@@ -298,6 +298,11 @@ class BaseBIDSDirectory(DispatchableComposite):
         return component_types
 
     def update_meta_information_component_types(self, component_kwargs: dict[str, Any] | None = None) -> None:
+        """Updates the meta information component types.
+
+        Args:
+            component_kwargs: Keyword arguments for components.
+        """
         if component_kwargs is None:
             component_kwargs = {}
 
