@@ -1,5 +1,5 @@
 """anatomypiaimporter.py
-
+A BIDS Anatomy Pia Importer.
 """
 # Package Header #
 from ...header import *
@@ -27,6 +27,7 @@ from ..file import command_copy, strip_json
 # Definitions #
 # Classes #
 class AnatomyPiaImporter(ModalityImporter):
+    """A BIDS Anatomy Pia Importer."""
 
     # Attributes #
     importer_name: str = "Pia"
@@ -39,6 +40,5 @@ class AnatomyPiaImporter(ModalityImporter):
     }
     file_maps: list[tuple[str, str, Iterable[Path], Callable, dict[str, Any]]] = [
         ("T1w", ".nii.gz", (Path("mri/brain.mgz")), command_copy, {"command": "mri_convert"}),
-        ("T1w", ".json", (Path("acpc/T1_orig.json"), Path("acpc/T1.json")), strip_json, {"strip": strip_fields}),
+        ("T1w", ".json", (Path("acpc/T1.json"), Path("acpc/T1_orig.json")), strip_json, {"strip": strip_fields}),
     ]
-

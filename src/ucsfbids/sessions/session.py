@@ -1,5 +1,5 @@
 """session.py
-A base class which defines a Session and dispatches a specific Session subclass based on meta information.
+A BIDS Session.
 """
 # Package Header #
 from ..header import *
@@ -30,31 +30,34 @@ from ..modalities import Modality
 # Definitions #
 # Classes #
 class Session(BaseBIDSDirectory):
-    """A base class which defines a Session and dispatches a specific Session subclass based on meta information.
+    """A BIDS Session.
 
     Class Attributes:
-        namespace: The namespace of the subclass.
-        name: The name of which the subclass will be registered as.
-        register: A register of all subclasses of this class.
-        registration: Determines if this class/subclass will be added to the register.
-        meta_information: The default meta information about the session.
-
+        _module_: The module name for this class.
+        class_register: A register of class types.
+        class_registration: Indicates if the class should be registered.
+        class_register_namespace: The namespace for class registration.
+        default_meta_information: Default meta information for the session.
+        default_modalities: Default modalities for the session.
+        
     Attributes:
-        _path: The path to session.
-        _is_open: Determines if this session and its contents are open.
-        _mode: The file mode of this session.
-        meta_info: The meta information that describes this session.
-        name: The name of this session.
-        parent_name: The name of the parent subject of this session.
+        component_types_register: Register for component types.
+        subject_name: The name of the subject associated with this session.
+        importers: Mapping of importers.
+        exporters: Mapping of exporters.
+        modalities: Dictionary of modalities.
 
     Args:
         path: The path to the session's directory.
-        name: The name of the session.
+        name: The ID name of the session.
         parent_path: The parent path of this session.
         mode: The file mode to set this session to.
         create: Determines if this session will be created if it does not exist.
+        build: Determines if the directory will be built after creation.
+        load: Determines if the modalities will be loaded from the session's directory.
+        modalities_to_load: List of modality names to load.
         init: Determines if this object will construct.
-        kwargs: The keyword arguments for inheritance if any.
+        **kwargs: Additional keyword arguments.
     """
 
     # Class Attributes #
@@ -76,6 +79,19 @@ class Session(BaseBIDSDirectory):
         name: str | None = None,
         parent_path: Path | str | None = None,
     ) -> Path:
+        """Generates the meta information path for the session.
+
+        Args:
+            path: The path to the session's directory. Defaults to None.
+            name: The name of the session. Defaults to None.
+            parent_path: The path to the parent directory. Defaults to None.
+
+        Returns:
+            The path to the meta information file.
+
+        Raises:
+            ValueError: If neither path nor (parent_path and name) are provided.
+        """
         if path is not None:
             if not isinstance(path, Path):
                 path = Path(path)
@@ -162,54 +178,57 @@ class Session(BaseBIDSDirectory):
         modalities_to_load: list[str] | None = None,
         **kwargs: Any,
     ) -> None:
-        """Constructs this object.
-
+        """Constructs the Session object.
+    
         Args:
-            path: The path to the subject's directory.
-            name: The ID name of the subject.
-            parent_path: The parent path of this subject.
-            mode: The file mode to set this subject to.
-            create: Determines if this subject will be created if it does not exist.
-            load: Determines if the sessions will be loaded from the subject's directory.
-            kwargs: The keyword arguments for inheritance if any.
+            path: The path to the session's directory.
+            name: The ID name of the session.
+            parent_path: The parent path of this session.
+            mode: The file mode to set this session to.
+            create: Determines if this session will be created if it does not exist.
+            build: Determines if the directory will be built after creation.
+            load: Determines if the session will load.
+            modalities_to_load: List of modality names to load.
+            **kwargs: Additional keyword arguments.
         """
         # Name and Path Resolution
         if name is not None:
             self.name = name
-
+    
         if path is not None:
             self.path = Path(path)
-
+    
         if mode is not None:
             self._mode = mode
-
+    
         if self.path is not None:
             if name is None:
                 self.name = self.path.stem[4:]
         elif parent_path is not None and self.name is not None:
             self.path = (parent_path if isinstance(parent_path, Path) else Path(parent_path)) / self.directory_name
-
+    
         if self.path is not None:
             self.subject_name = self.path.parts[-2][4:]
-
+    
         # Load
         if self.path is not None and self.path.exists():
             if load:
                 self.load()
         elif create:
             self.construct_modalities()
-
-        # Construct Parent #
+    
+        # Construct Parent
         super().construct(**kwargs)
-
+    
         # Create
         if self.path is not None and not self.path.exists() and create:
             self.create(build=build)
 
     def build(self) -> None:
+        """Builds the session and its modalities."""
         super().build()
         self.build_modalities()
-
+    
     def load(
         self,
         names: Iterable[str] | None = None,
@@ -217,36 +236,26 @@ class Session(BaseBIDSDirectory):
         load: bool = True,
         **kwargs: Any,
     ) -> None:
+        """Loads the session and its modalities.
+    
+        Args:
+            names: Names of modalities to load.
+            mode: File mode to set the modalities to.
+            load: Whether to load the modalities.
+            **kwargs: Additional keyword arguments.
+        """
         super().load()
         self.load_modalities(names, mode, load)
-
+    
     # Modalities
     def construct_modalities(self) -> None:
+        """Constructs the default modalities for the session."""
         # Use an iterator to construct modalities
         self.modalities.update(
             (name, modality_type(parent_path=self.path, mode=self._mode, **kwargs))  # The key and modality to add
             for name, (modality_type, kwargs) in self.default_modalities.items()  # Iterate over the default modalities
         )
-
-    def build_modalities(self) -> None:
-        for modality in self.modalities.values():
-            modality.create()
-
-    def load_modalities(self, names: Iterable[str] | None = None, mode: str | None = None, load: bool = True) -> None:
-        """Loads all modalities in this session."""
-        m = self._mode if mode is None else mode
-        self.modalities.clear()
-
-        # Use an iterator to load modalities
-        self.modalities.update(
-            (s.name, s)  # The key and modality to add
-            for p in self.path.iterdir()  # Iterate over the path's contents
-            # Check if the path is a directory and the name is in the names list
-            if p.is_dir() and (names is None or any(n in p.stem for n in names)) and
-            # Create a modality and check if it is valid
-            (s := Modality(path=p, mode=m, load=load)) is not None
-        )
-
+    
     def create_modality(
         self,
         name: str,
@@ -256,25 +265,25 @@ class Session(BaseBIDSDirectory):
         load: bool = False,
         **kwargs: Any,
     ) -> Modality:
-        """Create a new session for this subject with a given session type and arguments.
-
+        """Creates a new modality for the session.
+    
         Args:
-            modality: The type of session to create.
-            name: The name of the new session, defaults to the latest generated name.
-            mode: The file mode to set the session to, defaults to the subject's mode.
-            create: Determines if the session will create its contents.
-            load: Determines if the sessions will be loaded from the subject's directory.
-            **kwargs: The keyword arguments for the session.
-
+            name: The name of the modality.
+            modality: The type of modality to create.
+            mode: The file mode to set the modality to, defaults to the session's mode.
+            create: Determines if the modality will create its contents.
+            load: Determines if the modality will load its contents.
+            **kwargs: The keyword arguments for the modality.
+    
         Returns:
-            The newly created session.
+            The newly created modality.
         """
         if name is None:
             name = modality.name
-
+    
         if mode is None:
             mode = self._mode
-
+    
         self.modalities[name] = new_modality = modality(
             name=name,
             parent_path=self.path,
@@ -284,3 +293,26 @@ class Session(BaseBIDSDirectory):
             **kwargs,
         )
         return new_modality
+    
+    def build_modalities(self) -> None:
+        """Builds all modalities for the session."""
+        for modality in self.modalities.values():
+            modality.create(build=True)
+
+    def load_modalities(self, names: Iterable[str] | None = None, mode: str | None = None, load: bool = True) -> None:
+        """Loads modalities in this subject.
+
+        Args:
+            names: Names of modalities to load. The default None loads all modalities.
+            mode: File mode to set the modalities to.
+            load: Determines if the modalities will be loaded.
+        """
+        if mode is None:
+            mode = self._mode
+        self.modalities.clear()
+
+        # Create path iterator
+        paths = self.path.iterdir() if names is None else (self.path / n for n in names)
+
+        # Use an iterator to load modalities
+        self.modalities.update((m.name, m) for p in paths if (m := Modality(path=p, mode=mode, load=load)) is not None)

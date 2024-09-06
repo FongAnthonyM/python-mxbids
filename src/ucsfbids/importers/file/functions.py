@@ -17,6 +17,7 @@ from collections.abc import Iterable
 from json import dump, load
 from pathlib import Path
 import subprocess
+from warnings import warn
 
 # Third-Party Packages #
 
@@ -26,8 +27,15 @@ import subprocess
 # Definitions #
 # Functions #
 def strip_json(old_path: Path, new_path: Path, strip: Iterable[str] = ()) -> None:
+    """Strips specified fields from a JSON file and writes the cleaned data to a new file.
+
+    Args:
+        old_path: The path to the original JSON file.
+        new_path: The path to the new JSON file.
+        strip: The fields to strip from the JSON data.
+    """
     if not old_path.exists():
-        print(f"could not find {old_path}")
+        warn(f"could not find {old_path}")
         return
     with open(old_path, "r") as f:
         data_orig = load(f)
@@ -39,6 +47,13 @@ def strip_json(old_path: Path, new_path: Path, strip: Iterable[str] = ()) -> Non
 
 
 def command_copy(old_path: Path, new_path: Path, command: str) -> None:
+    """Copies a file using a specified command.
+
+    Args:
+        old_path: The path to the original file.
+        new_path: The path to the new file.
+        command: The command to use for copying the file.
+    """
     subprocess.run([command, str(old_path), str(new_path)])
 
 

@@ -1,5 +1,5 @@
 """ieegcdfscomponent.py
-
+A component for the IEEG modality which implements access a CDFS.
 """
 # Package Header #
 from ..header import *
@@ -25,6 +25,14 @@ from cdfs import BaseCDFS
 # Definitions #
 # Classes #
 class IEEGCDFSComponent(BaseComponent):
+    """A component for the IEEG modality which implements access a CDFS.
+
+    Attributes:
+        _module_: The module name for this class.
+        cdfs_type: The type of the CDFS to access.
+        cdfs: The CDFS instance.
+    """
+
     # Class Attributes #
     _module_: ClassVar[str | None] = "ucsfbids.cdfsbids"
 
@@ -38,10 +46,12 @@ class IEEGCDFSComponent(BaseComponent):
         """Creates or loads the CDFS of this modality.
 
         Args:
+            file_name: The name of the contents file of the CDFS. If None, the name will be generated from modality.
+            create: Determines if the CDFS will be created. Defaults to False.
             **kwargs: The keyword arguments for creating the CDFS.
 
         Returns:
-            The CDFS of this session.
+            The CDFS of this modality.
         """
         if file_name is None:
             file_name = self.generate_contents_file_name()
@@ -58,11 +68,14 @@ class IEEGCDFSComponent(BaseComponent):
         return cdfs
 
     def build(self) -> None:
+        """Builds the CDFS for this modality."""
         self.construct_cdfs(create=True, build=True)
 
     def load(self) -> None:
+        """Loads the CDFS for this modality."""
         self.construct_cdfs(open_=True, create=False)
 
+    # Content File
     def generate_contents_file_name(self) -> str:
         """Generates a name for the contents file from the subject and session name.
 

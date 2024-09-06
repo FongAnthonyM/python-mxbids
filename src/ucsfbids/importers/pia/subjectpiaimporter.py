@@ -1,5 +1,5 @@
-""""subjectpiaimporter.py
-
+"""subjectpiaimporter.py
+A BIDS Subject Pia Importer.
 """
 # Package Header #
 from ...header import *
@@ -27,10 +27,12 @@ from .sessionpiaimporter import SessionPiaImporter
 # Definitions #
 # Classes #
 class SubjectPiaImporter(SubjectImporter):
+    """A BIDS Subject Pia Importer."""
 
     # Attributes #
     importer_name: str = "Pia"
 
+    default_inner_importer = (SessionPiaImporter, {})
     inner_maps: list[tuple[str, type, dict[str, Any], str, type, dict[str, Any]]] = [
         ("clinicalintracranial", Session, {}, "Pia", SessionPiaImporter, {}),
     ]

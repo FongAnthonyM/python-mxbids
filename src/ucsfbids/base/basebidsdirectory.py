@@ -229,13 +229,14 @@ class BaseBIDSDirectory(DispatchableComposite):
         """Constructs this object.
 
         Args:
-            path: The path to the subject's directory.
-            name: The ID name of the subject.
-            parent_path: The parent path of this subject.
-            mode: The file mode to set this subject to.
-            create: Determines if this subject will be created if it does not exist.
-            load: Determines if the sessions will be loaded from the subject's directory.
-            kwargs: The keyword arguments for inheritance if any.
+            path: The path to the BIDS directory.
+            name: The name of the BIDS directory.
+            parent_path: The path to the parent directory.
+            mode: The file mode of the BIDS directory.
+            component_kwargs: Keyword arguments for components.
+            component_types: Types and arguments for components.
+            components: The components of the BIDS directory.
+            **kwargs: Additional keyword arguments.
         """
         if name is not None:
             self.name = name
@@ -259,15 +260,26 @@ class BaseBIDSDirectory(DispatchableComposite):
         )
 
     def create(self, build: bool = True) -> None:
+        """Creates the BIDS directory.
+
+        Args:
+            build: Whether to build the directory after creation. Defaults to True.
+        """
         self.path.mkdir(exist_ok=True)
         if build:
             self.build()
 
     def build(self) -> None:
+        """Builds the BIDS directory's structure and default files."""
         self.update_meta_information_component_types()
         self.create_meta_information()
 
     def load(self, **kwargs: Any) -> None:
+        """Loads the BIDS directory.
+
+        Args:
+            **kwargs: Additional keyword arguments.
+        """
         self.load_meta_information()
 
     # Components

@@ -81,6 +81,11 @@ class Dataset(BaseBIDSDirectory):
         "BIDSVersion": "1.6.0",
         "DatasetType": "raw",
     }
+    default_participant_fields: ClassVar[dict[str, Any]] = {
+        "participant_id": {
+            "Description": "A unique identifier for the participant.",
+        },
+    }
 
     # Class Methods #
     @classmethod
@@ -119,7 +124,7 @@ class Dataset(BaseBIDSDirectory):
 
     _description: dict[str, Any] | None = None
 
-    participant_fields: dict[str, Any] = {}
+    _participant_fields: dict[str, Any] | None = None
     participants: pd.DataFrame | None = None
 
     subjects: dict[str, Subject]
@@ -159,6 +164,14 @@ class Dataset(BaseBIDSDirectory):
         return self._path / f"participants.json"
 
     @property
+    def participant_fields(self) -> dict[str, Any]:
+        """The participant fields of the dataset."""
+        if self._participant_fields is None:
+            return self.default_participant_fields.copy()
+        else:
+            return self._participant_fields
+
+    @property
     def participants_path(self) -> Path:
         """The path to the participant tsv file."""
         return self._path / f"participants.tsv"
@@ -180,8 +193,6 @@ class Dataset(BaseBIDSDirectory):
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.description = self.description.copy()
-        self.participant_fields = self.participant_fields.copy()
         self.subjects = {}
 
         # Parent Attributes #
@@ -218,7 +229,7 @@ class Dataset(BaseBIDSDirectory):
         """Constructs this object.
 
         Args:
-           path: The path to the dataset's directory.
+            path: The path to the dataset's directory.
             name: The name of the dataset.
             parent_path: The parent path of this dataset.
             mode: The file mode to set this dataset to.
@@ -306,9 +317,11 @@ class Dataset(BaseBIDSDirectory):
 
     # Participant Fields
     def create_participant_fields(self) -> None:
-        """Creates participant fields file and saves the participant fields."""
+        """Creates participant fields file and saves the participant_fields."""
+        if self._participant_fields is None:
+            self._participant_fields = deepcopy(self.default_participant_fields)
         with self.participant_fields_path.open(self._mode) as file:
-            json.dump(self.participant_fields, file)
+            json.dump(self._participant_fields, file)
 
     def load_participant_fields(self) -> dict:
         """Loads the participant fields from the file.
@@ -316,13 +329,18 @@ class Dataset(BaseBIDSDirectory):
         Returns:
             The dataset participant fields.
         """
-        self.participant_fields.clear()
+        if self._participant_fields is None:
+            self._participant_fields = {}
+        else:
+            self._participant_fields.clear()
+
         with self.participant_fields_path.open("r") as file:
-            self.participant_fields.update(json.load(file))
-        return self.participant_fields
+            self._participant_fields.update(json.load(file))
+
+        return self._participant_fields
 
     def save_participant_fields(self) -> None:
-        """Saves the participant fields to the file."""
+        """Saves the participant_fields to the file."""
         with self.participant_fields_path.open(self._mode) as file:
             json.dump(self.participant_fields, file)
 
@@ -330,7 +348,7 @@ class Dataset(BaseBIDSDirectory):
     def create_participants(self) -> None:
         """Creates participants file and saves the participants."""
         if self.participants is None:
-            self.participants = pd.DataFrame(columns=["participant_id"])
+            self.participants = pd.DataFrame(columns=tuple(self.participant_fields.keys()))
 
         self.participants.to_csv(self.participants_path, mode=self._mode, sep="\t")
 
@@ -347,28 +365,7 @@ class Dataset(BaseBIDSDirectory):
         """Saves the participants to the file."""
         self.participants.to_csv(self.participants_path, mode=self._mode, sep="\t")
 
-    # Subject
-    def load_subjects(self, names: Iterable[str] | None = None, mode: str | None = None, load: bool = True) -> None:
-        """Loads all subjects in this dataset.
-
-        Args:
-            names: Names of subjects to load.
-            mode: File mode to set the subjects to.
-            load: Determines if the subjects will be loaded.
-        """
-        m = self._mode if mode is None else mode
-        self.subjects.clear()
-
-        # Use an iterator to load subjects
-        self.subjects.update(
-            (s.name, s)  # The key and subject to add
-            for p in self.path.iterdir()  # Iterate over the path's contents
-            # Check if the path is a directory and the name is in the names list
-            if p.is_dir() and (names is None or any(n in p.stem for n in names)) and
-            # Create a subject and check if it is valid
-            (s := Subject(path=p, mode=m, load=load)) is not None
-        )
-
+    # Subjects
     def generate_latest_subject_name(self, prefix: str | None = None, digits: int | None = None) -> str:
         """Generates a subject name for a new latest subject.
 
@@ -377,7 +374,7 @@ class Dataset(BaseBIDSDirectory):
             digits: Number of digits for the subject name.
 
         Returns:
-            str: The name of the latest session to create.
+            The name of the latest subject to create.
         """
         if prefix is None:
             prefix = self.subject_prefix
@@ -405,7 +402,7 @@ class Dataset(BaseBIDSDirectory):
             kwargs: The keyword arguments for the subject.
 
         Returns:
-            Subject: The newly created session.
+            The newly created subject.
         """
         if name is None:
             name = self.generate_latest_subject_name()
@@ -422,3 +419,21 @@ class Dataset(BaseBIDSDirectory):
             **kwargs,
         )
         return new_subject
+
+    def load_subjects(self, names: Iterable[str] | None = None, mode: str | None = None, load: bool = True) -> None:
+        """Loads subjects in this dataset.
+
+        Args:
+            names: Names of subjects to load. The default None loads all subjects.
+            mode: File mode to set the subjects to.
+            load: Determines if the subjects will be loaded.
+        """
+        if mode is None:
+            mode = self._mode
+        self.subjects.clear()
+
+        # Create path iterator
+        paths = self.path.iterdir() if names is None else (self.path / n for n in names)
+
+        # Use an iterator to load subjects
+        self.subjects.update((s.name, s) for p in paths if (s := Subject(path=p, mode=mode, load=load)) is not None)
