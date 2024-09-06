@@ -1,5 +1,5 @@
 """subject.py
-
+A BIDS Subject.
 """
 # Package Header #
 from ..header import *
@@ -30,14 +30,22 @@ from ..sessions import Session
 # Definitions #
 # Classes #
 class Subject(BaseBIDSDirectory):
-    """A subject in the UCSF BIDS format.
+    """A BIDS Subject.
+
+    Class Attributes:
+        _module_: The module name for this class.
+        class_register: A register of class types.
+        class_registration: Indicates if the class should be registered.
+        class_register_namespace: The namespace for class registration.
+        default_meta_information: Default meta information for the subject.
 
     Attributes:
-        _path: The path to subject.
-        _is_open: Determines if this subject and its contents are open.
-        _mode: The file mode of this subject.
-        name: The name of this subject.
-        sessions: The session of the subject.
+        component_types_register: Register for component types.
+        session_prefix: Prefix for session names.
+        session_digits: Number of digits in session names.
+        importers: Mapping of importers.
+        exporters: Mapping of exporters.
+        sessions: Dictionary of sessions.
 
     Args:
         path: The path to the subject's directory.
@@ -45,9 +53,11 @@ class Subject(BaseBIDSDirectory):
         parent_path: The parent path of this subject.
         mode: The file mode to set this subject to.
         create: Determines if this subject will be created if it does not exist.
-        load: Determines if the sessions will be loaded from the subject's directory.
+        build: Determines if the directory will be built after creation.
+        load: Determines if the subject will load.
+        sessions_to_load: The list of session names to load.
         init: Determines if this object will construct.
-        kwargs: The keyword arguments for inheritance if any.
+        **kwargs: Additional keyword arguments.
     """
 
     # Class Attributes #
@@ -68,6 +78,19 @@ class Subject(BaseBIDSDirectory):
         name: str | None = None,
         parent_path: Path | str | None = None,
     ) -> Path:
+        """Generates the meta information path for the subject.
+
+        Args:
+            path: The path to the subject's directory.
+            name: The name of the subject.
+            parent_path: The path to the parent directory.
+
+        Returns:
+            The path to the meta information file.
+
+        Raises:
+            ValueError: If neither path nor (parent_path and name) are provided.
+        """
         if path is not None:
             if not isinstance(path, Path):
                 path = Path(path)
@@ -161,8 +184,10 @@ class Subject(BaseBIDSDirectory):
             parent_path: The parent path of this subject.
             mode: The file mode to set this subject to.
             create: Determines if this subject will be created if it does not exist.
+            build: Determines if the directory will be built after creation.
             load: Determines if the sessions will be loaded from the subject's directory.
-            kwargs: The keyword arguments for inheritance if any.
+            sessions_to_load: The list of session names to load.
+            **kwargs: Additional keyword arguments.
         """
         # Name and Path Resolution
         if name is not None:
@@ -184,16 +209,12 @@ class Subject(BaseBIDSDirectory):
         if self.path is not None and self.path.exists() and load:
             self.load(sessions_to_load)
 
-        # Construct Parent #
+        # Construct Parent
         super().construct(**kwargs)
 
         # Create
         if self.path is not None and not self.path.exists() and create:
             self.create(build=build)
-
-    def build(self) -> None:
-        super().build()
-        self.build_sessions()
 
     def load(
         self,
@@ -206,27 +227,12 @@ class Subject(BaseBIDSDirectory):
         self.load_sessions(names, mode, load)
 
     # Session
-    def build_sessions(self) -> None:
-        for session in self.sessions.values():
-            session.create()
-
-    def load_sessions(self, names: Iterable[str] | None = None, mode: str | None = None, load: bool = True) -> None:
-        """Loads all sessions in this subject."""
-        m = self._mode if mode is None else mode
-        self.sessions.clear()
-
-        # Use an iterator to load sessions
-        self.sessions.update(
-            (s.name, s)  # The key and session to add
-            for p in self.path.iterdir()  # Iterate over the path's contents
-            # Check if the path is a directory and the name is in the names list
-            if p.is_dir() and (names is None or any(n in p.stem for n in names)) and
-            # Create a session and check if it is valid
-            (s := Session(path=p, mode=m, load=load)) is not None
-        )
-
     def generate_latest_session_name(self, prefix: str | None = None, digits: int | None = None) -> str:
-        """Generates a subject name for a new latest subject.
+        """Generates a session name for a new latest session.
+
+        Args:
+            prefix: Prefix for the session name.
+            digits: Number of digits for the session name.
 
         Returns:
             The name of the latest session to create.
@@ -249,11 +255,11 @@ class Subject(BaseBIDSDirectory):
         """Create a new session for this subject with a given session type and arguments.
 
         Args:
-            session: The type of session to create.
             name: The name of the new session, defaults to the latest generated name.
+            session: The type of session to create.
             mode: The file mode to set the session to, defaults to the subject's mode.
             create: Determines if the session will create its contents.
-            load: Determines if the sessions will be loaded from the subject's directory.
+            load: Determines if the session will load its contents.
             **kwargs: The keyword arguments for the session.
 
         Returns:
@@ -274,3 +280,22 @@ class Subject(BaseBIDSDirectory):
             **kwargs,
         )
         return new_session
+
+    def load_sessions(self, names: Iterable[str] | None = None, mode: str | None = None, load: bool = True) -> None:
+        """Loads sessions in this subject.
+
+        Args:
+            names: Names of sessions to load. The default None loads all sessions.
+            mode: File mode to set the sessions to.
+            load: Determines if the sessions will be loaded.
+        """
+        if mode is None:
+            mode = self._mode
+        self.sessions.clear()
+
+        # Create path iterator
+        paths = self.path.iterdir() if names is None else (self.path / n for n in names)
+
+        # Use an iterator to load sessions
+        self.sessions.update((s.name, s) for p in paths if (s := Session(path=p, mode=mode, load=load)) is not None)
+    

@@ -1,5 +1,5 @@
 """datasetimporter.py
-
+A BIDS Dataset Importer.
 """
 # Package Header #
 from ..header import *
@@ -25,6 +25,8 @@ from ..base import BaseImporter
 # Definitions #
 # Classes #
 class DatasetImporter(BaseImporter):
+    """A BIDS Dataset Importer."""
+
     # Instance Methods #
     def import_subjects(
         self,
@@ -32,6 +34,13 @@ class DatasetImporter(BaseImporter):
         inner_maps: list[tuple[str, type, dict[str, Any], str, type, dict[str, Any]]] | None = None,
         **kwargs: Any,
     ) -> None:
+        """Imports subjects from the given path.
+
+        Args:
+            path: The root path the files to import.
+            inner_maps: The list of maps which map inner objects created from this import and importers for those objects.
+            **kwargs: Additional keyword arguments.
+        """
         if inner_maps is None:
             inner_maps = self.inner_maps
 
@@ -39,7 +48,7 @@ class DatasetImporter(BaseImporter):
             # Correct names
             if s_name[:4] == "sub-":
                 s_name = s_name[4:]
-            
+
             subject = self.bids_object.subjects.get(s_name, None)
             if subject is None:
                 self.bids_object.create_subject(s_name, s_type, **({"create": True, "build": True} | s_kwargs))
@@ -59,6 +68,14 @@ class DatasetImporter(BaseImporter):
         inner_maps: bool | list[tuple[str, type, dict[str, Any], str, type, dict[str, Any]]] | None = True,
         **kwargs: Any,
     ) -> None:
+        """Executes the import process for the dataset.
+
+        Args:
+            path: The root path the files to import.
+            file_maps: A list of file maps which contain the path information and a callable which imports the file.
+            inner_maps: The list of maps which map inner objects created from this import and importers for those objects.
+            **kwargs: Additional keyword arguments.
+        """
         self.bids_object.create(build=False)
         if file_maps or file_maps is None:
             self.import_files(path=path, file_maps=file_maps)

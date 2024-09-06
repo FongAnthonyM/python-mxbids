@@ -1,5 +1,5 @@
 """datasetexporter.py
-
+A class for exporting BIDS datasets.
 """
 # Package Header #
 from ..header import *
@@ -26,6 +26,7 @@ from ..base import BaseExporter
 # Definitions #
 # Classes #
 class DatasetExporter(BaseExporter):
+    """A class for exporting BIDS datasets."""
 
     # Instance Methods #
     def export_subjects(
@@ -35,6 +36,14 @@ class DatasetExporter(BaseExporter):
         type_map: dict[type, type] | None = None,
         **kwargs: Any,
     ) -> None:
+        """Exports subjects from the dataset to the specified path.
+
+        Args:
+            path: The root path to export the subjects to.
+            name_map: A mapping of original subject names to new names. Defaults to None.
+            type_map: A mapping of subject types to exporter types. Defaults to None.
+            **kwargs: Additional keyword arguments.
+        """
         if name_map is None:
             name_map = self.name_map
 
@@ -91,6 +100,17 @@ class DatasetExporter(BaseExporter):
         type_map: dict[type, type] | None = None,
         **kwargs: Any,
     ) -> None:
+        """Executes the export process for the dataset.
+
+        Args:
+            path (Path): The root path to export the dataset to.
+            name (str, optional): The name of the dataset. Defaults to None.
+            files (bool | set[str, ...], optional): A set of files to export or a boolean indicating whether to export files. Defaults to True.
+            inner (bool, optional): Whether to export inner objects (e.g., subjects). Defaults to True.
+            name_map (dict[str, str], optional): A mapping of original names to new names. Defaults to None.
+            type_map (dict[type, type], optional): A mapping of object types to exporter types. Defaults to None.
+            **kwargs (Any): Additional keyword arguments.
+        """
         if name is None:
             name = self.bids_object.full_name
 

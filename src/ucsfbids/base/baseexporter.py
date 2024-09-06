@@ -28,7 +28,7 @@ from baseobjects import BaseObject
 # Definitions #
 # Classes #
 class BaseExporter(BaseObject):
-    """A base class for exporting from the UCSFBIDS format.
+    """A base class for exporting from the UCSFBIDS.
 
     Attributes:
         exporter_name: The name of the exporter.
@@ -144,7 +144,7 @@ class BaseExporter(BaseObject):
         Args:
             path: The destination root path for the files to be exported to.
             name: The new name for the exported files. Defaults to None, retaining its name.
-            files: The set of file names to export. Defaults to None.
+            files: The set of file names to export. Defaults to None, exporting all files.
         """
         if files is None:
             files = self.export_file_names

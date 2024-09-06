@@ -1,5 +1,5 @@
-""""_datasetpiaimporter.py
-
+""""datasetpiaimporter.py
+A BIDS Dataset PIA Importer.
 """
 # Package Header #
 from ...header import *
@@ -19,14 +19,18 @@ __email__ = __email__
 # Local Packages #
 from ...datasets import Dataset
 from ..datasetimporter import DatasetImporter
+from .subjectpiaimporter import SubjectPiaImporter
 
 
 # Definitions #
 # Classes #
 class DatasetPiaImporter(DatasetImporter):
+    """A BIDS Dataset PIA Importer."""
 
     # Attributes #
     importer_name: str = "Pia"
+
+    default_inner_importer = (SubjectPiaImporter, {})
 
 
 # Assign Importer

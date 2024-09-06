@@ -95,7 +95,7 @@ class BaseImporter(BaseObject):
             bids_object: The UCSFBIDS object to import to.
             file_maps: A list of file maps which contain the path information and a callable which imports the file.
             inner_maps: The list of maps which map inner objects created from this import and importers for those objects.
-            **kwargs (Any): Additional keyword arguments.
+            **kwargs: Additional keyword arguments.
         """
         if bids_object is not None:
             self.bids_object = bids_object

@@ -1,5 +1,5 @@
 """ctpiaimporter.py
-
+A BIDS CT Pia Importer.
 """
 # Package Header #
 from ...header import *
@@ -28,6 +28,7 @@ from ..file import strip_json
 # Definitions #
 # Classes #
 class CTPiaImporter(ModalityImporter):
+    """A BIDS CT Pia Importer."""
 
     # Attributes #
     importer_name: str = "Pia"
@@ -40,6 +41,5 @@ class CTPiaImporter(ModalityImporter):
     }
     file_maps: list[tuple[str, str, Iterable[Path], Callable, dict[str, Any]]] = [
         ("CT", ".nii", (Path("CT/CT.nii"), Path("CT/CT.nii.gz")), shutil.copy, {"command": "mri_convert"}),
-        ("CT", ".json", (Path("CT/CT_orig.json"), Path("CT/CT.json")), strip_json, {"strip": strip_fields}),
+        ("CT", ".json", (Path("CT/CT.json"), Path("CT/CT_orig.json")), strip_json, {"strip": strip_fields}),
     ]
-

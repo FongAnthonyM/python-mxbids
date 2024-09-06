@@ -1,5 +1,5 @@
-""""sessionpiaimporter.py
-
+"""sessionpiaimporter.py
+A BIDS Session Pia Importer.
 """
 # Package Header #
 from ...header import *
@@ -29,6 +29,7 @@ from .ieegpiaimporter import IEEGPiaImporter
 # Definitions #
 # Classes #
 class SessionPiaImporter(SessionImporter):
+    """A BIDS Session Pia Importer."""
 
     # Attributes #
     importer_name: str = "Pia"
