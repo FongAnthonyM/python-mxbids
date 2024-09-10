@@ -1,5 +1,5 @@
 """subjectexporter.py
-
+A class for exporting BIDS subjects.
 """
 # Package Header #
 from ..header import *
@@ -25,6 +25,7 @@ from ..base import BaseExporter
 # Definitions #
 # Classes #
 class SubjectExporter(BaseExporter):
+    """A class for exporting BIDS subjects."""
 
     # Instance Methods #
     def export_sessions(
@@ -34,6 +35,14 @@ class SubjectExporter(BaseExporter):
         type_map: dict[type, type] | None = None,
         **kwargs: Any,
     ) -> None:
+        """Exports sessions from the subject to the specified path.
+
+        Args:
+            path: The root path to export the sessions to.
+            name_map: A mapping of original session names to new names.
+            type_map: A mapping of session types to exporter types.
+            **kwargs: Additional keyword arguments.
+        """
         if name_map is None:
             name_map = self.name_map
 
@@ -80,6 +89,17 @@ class SubjectExporter(BaseExporter):
         type_map: dict[type, type] | None = None,
         **kwargs: Any,
     ) -> None:
+        """Executes the export process for the subject.
+
+        Args:
+            path: The root path to export the subject to.
+            name: The new name of the exported subject. Defaults to None, retaining its name.
+            files: A set of files to export or a boolean indicating whether to export files.
+            inner: Determines if the inner objects (e.g., sessions) will be exported.
+            name_map: A mapping of original names to new names.
+            type_map: A mapping of object types to exporter types.
+            **kwargs: Additional keyword arguments.
+        """
         if name is None:
             name = self.bids_object.full_name
 

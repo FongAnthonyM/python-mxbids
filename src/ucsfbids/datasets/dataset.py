@@ -248,6 +248,11 @@ class Dataset(BaseBIDSDirectory):
         if mode is not None:
             self._mode = mode
 
+        if parent_path is not None and name is not None:
+            if isinstance(parent_path, str):
+                parent_path = Path(parent_path)
+            self.path = parent_path / name
+
         # Load
         if self.path is not None and self.path.exists() and load:
             self.load(subjects_to_load)

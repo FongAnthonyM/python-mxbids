@@ -1,5 +1,5 @@
 """sessionupennimplantexporter.py
-
+A class for exporting UPENN implant sessions.
 """
 # Package Header #
 from ...header import *
@@ -28,6 +28,7 @@ from .ieegupennexporter import IEEGUPENNExporter
 # Definitions #
 # Classes #
 class SessionUPENNImplantExporter(SessionBIDSExporter):
+    """A class for exporting UPENN implant sessions."""
 
     # Attributes #
     exporter_name: str = "UPENN"
@@ -35,4 +36,3 @@ class SessionUPENNImplantExporter(SessionBIDSExporter):
         IEEGXLTEK: (IEEGUPENNExporter, {}),
         CT: (CTUPENNExporter, {}),
     }
-

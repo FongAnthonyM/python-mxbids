@@ -1,5 +1,5 @@
 """ctbidsexporter.py
-
+A class for exporting BIDS CT data.
 """
 # Package Header #
 from ...header import *
@@ -24,7 +24,11 @@ from .modalitybidsexporter import ModalityBIDSExporter
 # Definitions #
 # Classes #
 class CTBIDSExporter(ModalityBIDSExporter):
-    pass
+    """A class for exporting BIDS CT data."""
+
+    # Attributes #
+    exporter_name: str = "BIDS"
+    export_exclude_names: set[str, ...] = {"meta"}
 
 
 # Assign Exporter

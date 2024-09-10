@@ -1,5 +1,5 @@
 """subjectupennexporter.py
-
+A class for exporting UPENN BIDS subjects.
 """
 # Package Header #
 from ...header import *
@@ -28,6 +28,8 @@ from .sessionupennpreimplantexporter import SessionUPENNPreImplantExporter
 # Definitions #
 # Classes #
 class SubjectUPENNExporter(SubjectBIDSExporter):
+    """A class for exporting UPENN BIDS subjects."""
+
     # Attributes #
     exporter_name: str = "UPENN"
 
@@ -39,6 +41,14 @@ class SubjectUPENNExporter(SubjectBIDSExporter):
         type_map: dict[type, type] | None = None,
         **kwargs: Any,
     ) -> None:
+        """Exports sessions from the subject to the specified path.
+
+        Args:
+            path: The root path to export the sessions to.
+            name_map: A mapping of original session names to new names.
+            type_map: A mapping of session types to exporter types.
+            **kwargs: Additional keyword arguments.
+        """
         non_cdfs_session = self.bids_object.sessions["clinicalintracranial"]
         session = XLTEKUCSFBIDSSession(
             path=non_cdfs_session.path,

@@ -1,5 +1,5 @@
 """datasetbidsexporter.py
-
+A class for exporting UPENN BIDS datasets.
 """
 # Package Header #
 from ...header import *
@@ -23,6 +23,7 @@ from .subjectupennexporter import SubjectUPENNExporter
 # Definitions #
 # Classes #
 class DatasetUPENNExporter(DatasetExporter):
+    """A class for exporting UPENN BIDS datasets."""
 
     # Attributes #
     exporter_name: str = "UPENN"

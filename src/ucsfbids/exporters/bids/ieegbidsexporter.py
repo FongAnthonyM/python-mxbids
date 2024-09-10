@@ -1,5 +1,5 @@
 """ieegbidsexporter.py
-
+A class for exporting BIDS iEEG data.
 """
 # Package Header #
 from ...header import *
@@ -24,6 +24,7 @@ from .modalitybidsexporter import ModalityBIDSExporter
 # Definitions #
 # Classes #
 class IEEGBIDSExporter(ModalityBIDSExporter):
+    """A class for exporting BIDS iEEG data."""
 
     # Attributes #
     export_file_names: set[str, ...] = {"ieeg", "coordsystem", "electrodes", "channels", "photo"}

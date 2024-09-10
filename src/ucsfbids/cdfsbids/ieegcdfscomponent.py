@@ -42,12 +42,21 @@ class IEEGCDFSComponent(BaseComponent):
 
     # Instance Methods #
     # Construction/Destruction
+    def build(self) -> None:
+        """Builds the CDFS for this modality."""
+        self.construct_cdfs(create=True, build=True)
+
+    def load(self) -> None:
+        """Loads the CDFS for this modality."""
+        self.construct_cdfs(open_=True, create=False)
+
+    # CDFS Object
     def construct_cdfs(self, file_name: str | None = None, create: bool = False, **kwargs: Any) -> BaseCDFS:
         """Creates or loads the CDFS of this modality.
 
         Args:
             file_name: The name of the contents file of the CDFS. If None, the name will be generated from modality.
-            create: Determines if the CDFS will be created. Defaults to False.
+            create: Determines if the CDFS will be created.
             **kwargs: The keyword arguments for creating the CDFS.
 
         Returns:
@@ -67,13 +76,59 @@ class IEEGCDFSComponent(BaseComponent):
         )
         return cdfs
 
-    def build(self) -> None:
-        """Builds the CDFS for this modality."""
-        self.construct_cdfs(create=True, build=True)
+    def create_cdfs(self, file_name: str | None = None, **kwargs: Any) -> BaseCDFS:
+        """Creates the CDFS of this modality.
 
-    def load(self) -> None:
-        """Loads the CDFS for this modality."""
-        self.construct_cdfs(open_=True, create=False)
+        Args:
+            file_name: The name of the contents file of the CDFS. If None, the name will be generated from modality.
+            **kwargs: The keyword arguments for creating the CDFS.
+
+        Returns:
+            The CDFS of this modality.
+        """
+        return self.construct_cdfs(file_name=file_name, create=True, **kwargs)
+
+    def require_cdfs(self, file_name: str | None = None, **kwargs: Any) -> BaseCDFS:
+        """Gets the CDFS of this modality, creating it if it does not exsist.
+
+        Args:
+            file_name: The name of the contents file of the CDFS. If None, the name will be generated from modality.
+            **kwargs: The keyword arguments for creating the CDFS.
+
+        Returns:
+            The CDFS of this modality.
+        """
+        if self.cdfs is None:
+            self.construct_cdfs(file_name=file_name, create=True, **kwargs)
+
+        return self.cdfs
+
+    def load_cdfs(self, file_name: str | None = None, **kwargs: Any) -> BaseCDFS:
+        """Loads the CDFS of this modality from the file system.
+
+        Args:
+            file_name: The name of the contents file of the CDFS. If None, the name will be generated from modality.
+            **kwargs: The keyword arguments for creating the CDFS.
+
+        Returns:
+            The CDFS of this modality.
+        """
+        return self.construct_cdfs(file_name=file_name, open_=True, **kwargs)
+
+    def get_cdfs(self, file_name: str | None = None, **kwargs: Any) -> BaseCDFS:
+        """Gets the CDFS of this modality, loading it if it is not present.
+
+        Args:
+            file_name: The name of the contents file of the CDFS. If None, the name will be generated from modality.
+            **kwargs: The keyword arguments for creating the CDFS.
+
+        Returns:
+            The CDFS of this modality.
+        """
+        if self.cdfs is None:
+            self.construct_cdfs(file_name=file_name, **kwargs)
+
+        return self.cdfs
 
     # Content File
     def generate_contents_file_name(self) -> str:
