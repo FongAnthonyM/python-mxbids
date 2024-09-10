@@ -1,5 +1,5 @@
 """sessionexporter.py
-
+A class for exporting BIDS sessions.
 """
 # Package Header #
 from ..header import *
@@ -25,6 +25,7 @@ from ..base import BaseExporter
 # Definitions #
 # Classes #
 class SessionExporter(BaseExporter):
+    """A class for exporting BIDS sessions."""
 
     # Instance Methods #
     def export_modalities(
@@ -34,6 +35,14 @@ class SessionExporter(BaseExporter):
         type_map: dict[type, type] | None = None,
         **kwargs: Any,
     ) -> None:
+        """Exports modalities from the session to the specified path.
+
+        Args:
+            path: The root path to export the modalities to.
+            name_map: A mapping of original modality names to new names.
+            type_map: A mapping of modality types to exporter types.
+            **kwargs: Additional keyword arguments.
+        """
         if name_map is None:
             name_map = self.name_map
 
@@ -74,6 +83,17 @@ class SessionExporter(BaseExporter):
         type_map: dict[type, type] | None = None,
         **kwargs: Any,
     ) -> None:
+        """Executes the export process for the session.
+
+        Args:
+            path: The root path to export the session to.
+            name: The new name of the exported session. Defaults to None, retaining its name.
+            files: A set of files to export or a boolean indicating whether to export files.
+            inner: Determines if the inner objects (e.g., modalities) will be exported.
+            name_map: A mapping of original names to new name.
+            type_map: A mapping of object types to exporter types.
+            **kwargs: Additional keyword arguments.
+        """
         if name is None:
             name = self.bids_object.full_name
 

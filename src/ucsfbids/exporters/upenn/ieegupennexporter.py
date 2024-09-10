@@ -1,5 +1,5 @@
 """ieegupennexporter.py
-
+A class for exporting UPENN iEEG data.
 """
 # Package Header #
 from ...header import *
@@ -23,6 +23,7 @@ from xltektools.xltekucsfbids.modalities.exporters.ieegxltekbidsexporter import 
 # Definitions #
 # Classes #
 class IEEGUPENNExporter(IEEGXLTEKBIDSExporter):
+    """A class for exporting UPENN iEEG data."""
 
     # Attributes #
     exporter_name: str = "UPENN"

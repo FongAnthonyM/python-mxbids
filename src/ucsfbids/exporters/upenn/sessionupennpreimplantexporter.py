@@ -1,5 +1,5 @@
 """sessionupennpreimplantexporter.py
-
+A class for exporting UPENN pre-implant sessions.
 """
 # Package Header #
 from ...header import *
@@ -26,6 +26,7 @@ from .anatomyupennexporter import AnatomyUPENNExporter
 # Definitions #
 # Classes #
 class SessionUPENNPreImplantExporter(SessionBIDSExporter):
+    """A class for exporting UPENN pre-implant sessions."""
 
     # Attributes #
     exporter_name: str = "UPENN"

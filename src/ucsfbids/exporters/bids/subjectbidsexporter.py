@@ -1,5 +1,5 @@
 """subjectexporter.py
-
+A class for exporting BIDS subjects.
 """
 # Package Header #
 from ...header import *
@@ -25,9 +25,11 @@ from .sessionbidsexporter import SessionBIDSExporter
 # Definitions #
 # Classes #
 class SubjectBIDSExporter(SubjectExporter):
+    """A class for exporting BIDS subjects."""
 
     # Attributes #
     exporter_name: str = "BIDS"
+    export_exclude_names: set[str, ...] = {"meta"}
     default_type: type = (SessionBIDSExporter, {})
 
 

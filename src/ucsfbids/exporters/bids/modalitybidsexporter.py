@@ -1,5 +1,5 @@
 """modalitybidsexporter.py
-
+A class for exporting BIDS modalities.
 """
 # Package Header #
 from ...header import *
@@ -24,9 +24,11 @@ from ..modalityexporter import ModalityExporter
 # Definitions #
 # Classes #
 class ModalityBIDSExporter(ModalityExporter):
+    """A class for exporting BIDS modalities."""
 
     # Attributes #
     exporter_name: str = "BIDS"
+    export_exclude_names: set[str, ...] = {"meta"}
 
 
 # Assign Exporter

@@ -1,5 +1,5 @@
 """anatomyupennexporter.py
-
+A class for exporting UPENN anatomy data.
 """
 # Package Header #
 from ...header import *
@@ -23,6 +23,7 @@ from ..bids import AnatomyBIDSExporter
 # Definitions #
 # Classes #
 class AnatomyUPENNExporter(AnatomyBIDSExporter):
+    """A class for exporting UPENN anatomy data."""
 
     # Attributes #
     exporter_name: str = "UPENN"

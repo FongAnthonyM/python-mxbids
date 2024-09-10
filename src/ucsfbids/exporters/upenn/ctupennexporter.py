@@ -1,5 +1,5 @@
 """ctupennexporter.py
-
+A class for exporting UPENN CT data.
 """
 # Package Header #
 from ...header import *
@@ -23,6 +23,7 @@ from ..bids import CTBIDSExporter
 # Definitions #
 # Classes #
 class CTUPENNExporter(CTBIDSExporter):
+    """A class for exporting UPENN CT data."""
 
     # Attributes #
     exporter_name: str = "UPENN"
