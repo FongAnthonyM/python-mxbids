@@ -47,7 +47,11 @@ class SessionImporter(BaseImporter):
         for m_name, m_type, m_kwargs, i_name, importer, i_kwargs in inner_maps:
             modality = self.bids_object.modalities.get(m_name, None)
             if modality is None:
-                self.bids_object.create_modality(m_name, m_type, **({"create": True, "build": True} | m_kwargs))
+                modality = self.bids_object.create_modality(
+                    m_name,
+                    m_type,
+                    **({"create": True, "build": True} | m_kwargs),
+                )
 
             if importer is None:
                 importer, i_kwargs = modality.importers.get(i_name, (None, {}))

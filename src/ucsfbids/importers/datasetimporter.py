@@ -51,7 +51,11 @@ class DatasetImporter(BaseImporter):
 
             subject = self.bids_object.subjects.get(s_name, None)
             if subject is None:
-                self.bids_object.create_subject(s_name, s_type, **({"create": True, "build": True} | s_kwargs))
+                subject = self.bids_object.create_subject(
+                    s_name,
+                    s_type,
+                    **({"create": True, "build": True} | s_kwargs),
+                )
 
             if importer is None:
                 importer, i_kwargs = subject.importers.get(i_name, (None, {}))
