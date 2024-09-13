@@ -51,7 +51,11 @@ class SubjectImporter(BaseImporter):
 
             session = self.bids_object.sessions.get(s_name, None)
             if session is None:
-                self.bids_object.create_session(s_name, s_type, **({"create": True, "build": True} | s_kwargs))
+                session = self.bids_object.create_session(
+                    s_name,
+                    s_type,
+                    **({"create": True, "build": True} | s_kwargs),
+                )
 
             if importer is None:
                 importer, i_kwargs = session.importers.get(i_name, (None, {}))
