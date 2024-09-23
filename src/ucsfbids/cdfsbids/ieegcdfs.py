@@ -42,7 +42,3 @@ class IEEGCDFS(IEEG):
     default_component_types: ClassVar[dict[str, tuple[type, dict[str, Any]]]] = {
         "cdfs": (IEEGCDFSComponent, {}),
     }
-
-    # Attributes #
-    importers: dict[str, tuple[type[BaseImporter], dict[str, Any]]] = {}
-    exporters: dict[str, tuple[type[BaseExporter], dict[str, Any]]] = {}
