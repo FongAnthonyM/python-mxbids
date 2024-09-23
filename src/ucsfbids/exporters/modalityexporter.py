@@ -46,7 +46,7 @@ class ModalityExporter(BaseExporter):
         if name is None:
             name = self.bids_object.full_name
 
-        new_path = path / name
+        new_path = path / f"{self.bids_object.name}"
         new_path.mkdir(exist_ok=True)
         if files or files is None:
             self.export_files(path=new_path, name=name, files=files)
