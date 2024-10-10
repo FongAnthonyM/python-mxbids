@@ -320,7 +320,7 @@ class BaseBIDSDirectory(DispatchableComposite):
 
         for name, component in self.components.items():
             cls = component.__class__
-            module = cls._module_ if "_module_" in cls.__dict__ else cls.__module__
+            module = cls.__dict__.get("_module_", cls.__module__)
             if module.split(".")[0] == "src":
                 module = module[4:]
 
