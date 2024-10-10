@@ -20,6 +20,7 @@ from baseobjects.composition import BaseComponent
 from cdfs import BaseCDFS
 
 # Local Packages #
+from ..modalities import IEEG
 
 
 # Definitions #
@@ -138,3 +139,7 @@ class IEEGCDFSComponent(BaseComponent):
             The name of the contents file.
         """
         return f"{self._composite().full_name}_contents.sqlite3"
+
+
+# Registration #
+IEEG.component_types_register.register_class(IEEGCDFSComponent)

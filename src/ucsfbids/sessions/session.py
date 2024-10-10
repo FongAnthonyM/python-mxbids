@@ -312,7 +312,10 @@ class Session(BaseBIDSDirectory):
         self.modalities.clear()
 
         # Create path iterator
-        paths = self.path.iterdir() if names is None else (self.path / n for n in names)
+        if names is None:
+            paths = (p for p in self.path.iterdir() if p.is_dir())
+        else:
+            paths = (self.path / n for n in names)
 
         # Use an iterator to load modalities
         self.modalities.update((m.name, m) for p in paths if (m := Modality(path=p, mode=mode, load=load)) is not None)

@@ -438,7 +438,10 @@ class Dataset(BaseBIDSDirectory):
         self.subjects.clear()
 
         # Create path iterator
-        paths = self.path.iterdir() if names is None else (self.path / n for n in names)
+        if names is None:
+            paths = (p for p in self.path.iterdir() if p.is_dir())
+        else:
+            paths = (self.path / n for n in names)
 
         # Use an iterator to load subjects
         self.subjects.update((s.name, s) for p in paths if (s := Subject(path=p, mode=mode, load=load)) is not None)
