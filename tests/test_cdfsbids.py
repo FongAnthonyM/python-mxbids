@@ -4,7 +4,7 @@
 Test for the baseobjects package.
 """
 # Package Header #
-from ucsfbids.header import *
+from mxbids.header import *
 
 # Header #
 __author__ = __author__
@@ -22,8 +22,8 @@ import pathlib
 import pytest
 
 # Local Packages #
-from ucsfbids import Dataset
-from ucsfbids.cdfsbids import CDFSSession
+from mxbids import Dataset
+from mxbids.cdfsbids import CDFSSession
 
 
 # Definitions #

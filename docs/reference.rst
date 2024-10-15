@@ -6,8 +6,8 @@ Reference
     :backlinks: none
 
 
-ucsfbids.__main__
+mxbids.__main__
 --------------------
 
-.. automodule:: ucsfbids.__main__
+.. automodule:: mxbids.__main__
    :members:

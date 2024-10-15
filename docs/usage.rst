@@ -1,6 +1,6 @@
 Usage
 =====
 
-.. click:: ucsfbids.__main__:main
-   :prog: python-ucsfbids
+.. click:: mxbids.__main__:main
+   :prog: python-mxbids
    :nested: full

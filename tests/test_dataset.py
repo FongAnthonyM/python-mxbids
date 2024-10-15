@@ -4,7 +4,7 @@
 Test for the baseobjects package.
 """
 # Package Header #
-from ucsfbids.header import *
+from mxbids.header import *
 
 # Header #
 __author__ = __author__
@@ -22,7 +22,7 @@ import pathlib
 import pytest
 
 # Local Packages #
-from ucsfbids.datasets import Dataset
+from mxbids.datasets import Dataset
 
 
 # Definitions #
