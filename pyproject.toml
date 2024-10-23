@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mxbids"
-version = "0.2.0"
+version = "0.3.0"
 description = "Modular Extensible Brain Imaging Data Structure"
 authors = ["Anthony Fong <FongAnthonyM@gmail.com>"]
 license = "MIT"
