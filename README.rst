@@ -1,4 +1,4 @@
-ucsfbids
+mxbids
 ============
 
 |PyPI| |Status| |Python Version| |License|
@@ -7,26 +7,26 @@ ucsfbids
 
 |pre-commit| |Black|
 
-.. |PyPI| image:: https://img.shields.io/pypi/v/ucsfbids.svg
-   :target: https://pypi.org/project/ucsfbids/
+.. |PyPI| image:: https://img.shields.io/pypi/v/mxbids.svg
+   :target: https://pypi.org/project/mxbids/
    :alt: PyPI
-.. |Status| image:: https://img.shields.io/pypi/status/ucsfbids.svg
-   :target: https://pypi.org/project/ucsfbids/
+.. |Status| image:: https://img.shields.io/pypi/status/mxbids.svg
+   :target: https://pypi.org/project/mxbids/
    :alt: Status
-.. |Python Version| image:: https://img.shields.io/pypi/pyversions/ucsfbids
-   :target: https://pypi.org/project/ucsfbids
+.. |Python Version| image:: https://img.shields.io/pypi/pyversions/mxbids
+   :target: https://pypi.org/project/mxbids
    :alt: Python Version
-.. |License| image:: https://img.shields.io/pypi/l/ucsfbids
+.. |License| image:: https://img.shields.io/pypi/l/mxbids
    :target: https://opensource.org/licenses/MIT
    :alt: License
-.. |Read the Docs| image:: https://img.shields.io/readthedocs/python-ucsfbids/latest.svg?label=Read%20the%20Docs
-   :target: https://python-ucsfbids.readthedocs.io/
-   :alt: Read the documentation at https://python-ucsfbids.readthedocs.io/
-.. |Tests| image:: https://github.com/fongant/python-ucsfbids/workflows/Tests/badge.svg
-   :target: https://github.com/fongant/ucsfbids/actions?workflow=Tests
+.. |Read the Docs| image:: https://img.shields.io/readthedocs/python-mxbids/latest.svg?label=Read%20the%20Docs
+   :target: https://python-mxbids.readthedocs.io/
+   :alt: Read the documentation at https://python-mxbids.readthedocs.io/
+.. |Tests| image:: https://github.com/fongant/python-mxbids/workflows/Tests/badge.svg
+   :target: https://github.com/fongant/mxbids/actions?workflow=Tests
    :alt: Tests
-.. |Codecov| image:: https://codecov.io/gh/fongant/python-ucsfbids/branch/main/graph/badge.svg
-   :target: https://codecov.io/gh/fongant/python-ucsfbids
+.. |Codecov| image:: https://codecov.io/gh/fongant/python-mxbids/branch/main/graph/badge.svg
+   :target: https://codecov.io/gh/fongant/python-mxbids
    :alt: Codecov
 .. |pre-commit| image:: https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white
    :target: https://github.com/pre-commit/pre-commit
@@ -51,11 +51,11 @@ Requirements
 Installation
 ------------
 
-You can install *ucsfbids* via pip_ from PyPI_:
+You can install *mxbids* via pip_ from PyPI_:
 
 .. code:: console
 
-   $ pip install ucsfbids
+   $ pip install mxbids
 
 
 Usage
@@ -75,7 +75,7 @@ License
 -------
 
 Distributed under the terms of the `MIT license`_,
-*ucsfbids* is free and open source software.
+*mxbids* is free and open source software.
 
 
 Issues
@@ -98,8 +98,8 @@ This project was generated from `@cjolowicz`_'s `Hypermodern Python Cookiecutter
 .. _MIT license: https://opensource.org/licenses/MIT
 .. _PyPI: https://pypi.org/
 .. _Hypermodern Python Cookiecutter: https://github.com/cjolowicz/cookiecutter-hypermodern-python
-.. _file an issue: https://github.com/fongant/python-ucsfbids/issues
+.. _file an issue: https://github.com/fongant/python-mxbids/issues
 .. _pip: https://pip.pypa.io/
 .. github-only
 .. _Contributor Guide: CONTRIBUTING.rst
-.. _Usage: https://python-ucsfbids.readthedocs.io/en/latest/usage.html
+.. _Usage: https://python-mxbids.readthedocs.io/en/latest/usage.html

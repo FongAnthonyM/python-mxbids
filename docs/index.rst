@@ -13,4 +13,4 @@
    contributing
    Code of Conduct <codeofconduct>
    License <license>
-   Changelog <https://github.com/fongant/python-ucsfbids/releases>
+   Changelog <https://github.com/fongant/python-mxbids/releases>

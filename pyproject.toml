@@ -1,22 +1,22 @@
 [tool.poetry]
-name = "ucsfbids"
-version = "0.1.0"
-description = "Basic object templates."
+name = "mxbids"
+version = "0.2.0"
+description = "Modular Extensible Brain Imaging Data Structure"
 authors = ["Anthony Fong <FongAnthonyM@gmail.com>"]
 license = "MIT"
 readme = "README.rst"
-homepage = "https://github.com/fongant/python-ucsfbids"
-repository = "https://github.com/fongant/python-ucsfbids"
-documentation = "https://python-ucsfbids.readthedocs.io"
+homepage = "https://github.com/fongant/python-mxbids"
+repository = "https://github.com/fongant/python-mxbids"
+documentation = "https://python-mxbids.readthedocs.io"
 packages = [
-    { include = "ucsfbids", from = "src" },
+    { include = "mxbids", from = "src" },
 ]
 classifiers = [
     "Development Status :: 1 - Prototype",
 ]
 
 [tool.poetry.urls]
-Changelog = "https://github.com/fongant/python-ucsfbids/releases"
+Changelog = "https://github.com/fongant/python-mxbids/releases"
 
 [tool.poetry.dependencies]
 python = ">=3.10, <4.0"
@@ -51,7 +51,7 @@ sphinx-click = ">=3.0.2"
 Pygments = ">=2.10.0"
 
 [tool.poetry.scripts]
-python-ucsfbids = "ucsfbids.__main__:main"
+python-mxbids = "mxbids.__main__:main"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.4.2"
@@ -63,7 +63,7 @@ source = ["src", "*/site-packages"]
 
 [tool.coverage.run]
 branch = true
-source = ["ucsfbids"]
+source = ["mxbids"]
 
 [tool.coverage.report]
 show_missing = true
