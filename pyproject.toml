@@ -12,7 +12,7 @@ packages = [
     { include = "mxbids", from = "src" },
 ]
 classifiers = [
-    "Development Status :: 1 - Prototype",
+    "Development Status :: 1 - Planning",
 ]
 
 [tool.poetry.urls]
