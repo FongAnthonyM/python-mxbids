@@ -19,7 +19,7 @@ from typing import Any
 # Third-Party Packages #
 
 # Local Packages #
-from ..base import BaseImporter
+from ..base import BaseImporter, ImportFileMap, ImportInnerMap
 
 
 # Definitions #
@@ -31,7 +31,8 @@ class SessionImporter(BaseImporter):
     def import_modalities(
         self,
         path: Path,
-        inner_maps: list[tuple[str, type, dict[str, Any], str, type, dict[str, Any]]] | None = None,
+        inner_maps: list[ImportInnerMap, ...] | None = None,
+        override: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Imports modalities from the given path.
@@ -39,12 +40,13 @@ class SessionImporter(BaseImporter):
         Args:
             path: The root path the files to import.
             inner_maps: The list of maps which map inner objects created from this import and importers for those objects.
+            override: Determines if the files should be overridden if they already exist.
             **kwargs: Additional keyword arguments.
         """
         if inner_maps is None:
             inner_maps = self.inner_maps
 
-        for m_name, m_type, m_kwargs, i_name, importer, i_kwargs in inner_maps:
+        for m_name, m_type, i_name, stem, importer, i_override, m_kwargs, i_kwargs in inner_maps:
             modality = self.bids_object.modalities.get(m_name, None)
             if modality is None:
                 modality = self.bids_object.create_modality(
@@ -59,13 +61,15 @@ class SessionImporter(BaseImporter):
             if importer is None:
                 importer, i_kwargs = self.default_inner_importer
 
-            importer(bids_object=modality, **i_kwargs).execute_import(path)
+            over = override if override is not None else i_override
+            importer(bids_object=modality, **i_kwargs).execute_import(path.joinpath(stem), override=over)
 
     def execute_import(
         self,
         path: Path,
-        file_maps: bool | list[tuple] | None = True,
-        inner_maps: bool | list[tuple[str, type, dict[str, Any], str, type, dict[str, Any]]] | None = True,
+        file_maps: bool | list[ImportFileMap, ...] | None = True,
+        inner_maps: bool | list[ImportInnerMap, ...] | None = True,
+        override: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Executes the import process for the session.
@@ -74,10 +78,19 @@ class SessionImporter(BaseImporter):
             path: The root path the files to import.
             file_maps: A list of file maps which contain the path information and a callable which imports the file.
             inner_maps: The list of maps which map inner objects created from this import and importers for those objects.
+            override: Determines if the files should be overridden if they already exist.
             **kwargs: Additional keyword arguments.
         """
         self.bids_object.create(build=False)
         if file_maps or file_maps is None:
-            self.import_files(path=path, file_maps=file_maps)
+            self.import_files(
+                path=path,
+                file_maps=None if isinstance(file_maps, bool) else file_maps,
+                override=override,
+            )
         if inner_maps or inner_maps is None:
-            self.import_modalities(path=path, inner_maps=inner_maps)
+            self.import_modalities(
+                path=path,
+                inner_maps=None if isinstance(inner_maps, bool) else inner_maps,
+                override=override,
+            )

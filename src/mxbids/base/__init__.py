@@ -13,6 +13,7 @@ __email__ = __email__
 
 # Imports #
 # Local Packages #
+from .importmaps import ImportFileMap, ImportInnerMap
 from .baseimporter import BaseImporter
 from .baseexporter import BaseExporter
 from .basebidsdirectory import BaseBIDSDirectory
