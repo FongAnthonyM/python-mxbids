@@ -34,6 +34,7 @@ class DatasetExporter(BaseExporter):
         path: Path,
         name_map: dict[str, str] | None = None,
         type_map: dict[type, type] | None = None,
+        overwrite: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Exports subjects from the dataset to the specified path.
@@ -42,6 +43,7 @@ class DatasetExporter(BaseExporter):
             path: The root path to export the subjects to.
             name_map: A mapping of original subject names to new names.
             type_map: A mapping of subject types to exporter types.
+            overwrite: Determines if existing files will be overwritten.
             **kwargs: Additional keyword arguments.
         """
         if name_map is None:
@@ -64,12 +66,12 @@ class DatasetExporter(BaseExporter):
                 # Export using correct exporter type
                 exporter, d_kwargs = type_map.get(type(subject), (None, {}))
                 if exporter is not None:
-                    exporter(bids_object=subject, **d_kwargs).execute_export(path, name=new_name)
+                    exporter(bids_object=subject, **d_kwargs).execute_export(path, name=new_name, overwrite=overwrite)
                 else:
                     exporter, d_kwargs = self.default_type
                     s_exporter = subject.require_exporter(self.exporter_name, exporter, **d_kwargs)
                     try:
-                        s_exporter.execute_export(path, name=new_name)
+                        s_exporter.execute_export(path, name=new_name, overwrite=overwrite)
                     except Exception as e:
                         print(f"There was an error with {subject.name}")
                         print(f"{e}")
@@ -79,12 +81,12 @@ class DatasetExporter(BaseExporter):
                 # Export using correct exporter type
                 exporter, d_kwargs = type_map.get(type(subject), (None, {}))
                 if exporter is not None:
-                    exporter(bids_object=subject, **d_kwargs).execute_export(path)
+                    exporter(bids_object=subject, **d_kwargs).execute_export(path, overwrite=overwrite)
                 else:
                     exporter, d_kwargs = self.default_type
                     s_exporter = subject.require_exporter(self.exporter_name, exporter, **d_kwargs)
                     try:
-                        s_exporter.execute_export(path)
+                        s_exporter.execute_export(path, overwrite=overwrite)
                     except Exception as e:
                         print(f"There was an error with {subject.name}")
                         print(f"{e}")
@@ -98,6 +100,7 @@ class DatasetExporter(BaseExporter):
         inner: bool = True,
         name_map: dict[str, str] | None = None,
         type_map: dict[type, type] | None = None,
+        overwrite: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Executes the export process for the dataset.
@@ -109,6 +112,7 @@ class DatasetExporter(BaseExporter):
             inner: Determines if the inner objects (e.g., subjects) will be exported.
             name_map: A mapping of original names to new names.
             type_map: A mapping of object types to exporter types.
+            overwrite: Determines if existing files will be overwritten.
             **kwargs: Additional keyword arguments.
         """
         if name is None:
@@ -117,6 +121,11 @@ class DatasetExporter(BaseExporter):
         new_path = path / name
         new_path.mkdir(exist_ok=True)
         if files or files is None:
-            self.export_files(path=new_path, name=name, files=files)
+            self.export_files(
+                path=new_path,
+                name=name,
+                files=None if isinstance(files, bool) else files,
+                overwrite=overwrite,
+            )
         if inner:
-            self.export_subjects(path=new_path, name_map=name_map)
+            self.export_subjects(path=new_path, name_map=name_map, type_map=type_map, overwrite=overwrite)

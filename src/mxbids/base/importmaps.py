@@ -31,7 +31,7 @@ class ImportFileMap(NamedTuple):
         extension: The extension of the file to import into.
         paths: Relative paths to the file where each path is checked in order.
         function: The function to use to import the file.
-        override: Determines if the file should be overridden if it already exists.
+        overwrite: Determines if the file should be overridden if it already exists.
         kwargs: The keyword arguments to pass to the function.
     """
 
@@ -39,7 +39,7 @@ class ImportFileMap(NamedTuple):
     extension: str
     paths: Iterable[Path]
     function: Callable
-    override: bool | None = None
+    overwrite: bool | None = None
     kwargs: dict[str, Any] = {}
 
 
@@ -52,7 +52,7 @@ class ImportInnerMap(NamedTuple):
         importer_name: The name of the importer to use.
         stem: The stem of the directory to import from.
         importer_type: The type of the importer to use.
-        override: Determines if the inner object should be overridden if it already exists.
+        overwrite: Determines if the inner object should be overridden if it already exists.
         object_kwargs: The keyword arguments to pass to the object creation.
         importer_kwargs: The keyword arguments to pass to the importer creation.
     """
@@ -62,6 +62,6 @@ class ImportInnerMap(NamedTuple):
     importer_name: str
     stem: str
     importer_type: type | None
-    override: bool | None = None
+    overwrite: bool | None = None
     object_kwargs: dict[str, Any] = {}
     importer_kwargs: dict[str, Any] = {}

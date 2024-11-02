@@ -33,6 +33,7 @@ class SubjectExporter(BaseExporter):
         path: Path,
         name_map: dict[str, str] | None = None,
         type_map: dict[type, type] | None = None,
+        overwrite: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Exports sessions from the subject to the specified path.
@@ -41,6 +42,7 @@ class SubjectExporter(BaseExporter):
             path: The root path to export the sessions to.
             name_map: A mapping of original session names to new names.
             type_map: A mapping of session types to exporter types.
+            overwrite: Determines if existing files will be overwritten.
             **kwargs: Additional keyword arguments.
         """
         if name_map is None:
@@ -63,21 +65,21 @@ class SubjectExporter(BaseExporter):
                 # Export using correct exporter type
                 exporter, d_kwargs = type_map.get(type(session), (None, {}))
                 if exporter is not None:
-                    exporter(bids_object=session, **d_kwargs).execute_export(path, name=new_name)
+                    exporter(bids_object=session, **d_kwargs).execute_export(path, name=new_name, overwrite=overwrite)
                 else:
                     exporter, d_kwargs = self.default_type
                     s_exporter = session.require_exporter(self.exporter_name, exporter, **d_kwargs)
-                    s_exporter.execute_export(path, name=new_name)
+                    s_exporter.execute_export(path, name=new_name, overwrite=overwrite)
         else:
             for session in self.bids_object.sessions.values():
                 # Export using correct exporter type
                 exporter, d_kwargs = type_map.get(type(session), (None, {}))
                 if exporter is not None:
-                    exporter(bids_object=session, **d_kwargs).execute_export(path)
+                    exporter(bids_object=session, **d_kwargs).execute_export(path, overwrite=overwrite)
                 else:
                     exporter, d_kwargs = self.default_type
                     s_exporter = session.require_exporter(self.exporter_name, exporter, **d_kwargs)
-                    s_exporter.execute_export(path)
+                    s_exporter.execute_export(path, overwrite=overwrite)
 
     def execute_export(
         self,
@@ -87,6 +89,7 @@ class SubjectExporter(BaseExporter):
         inner: bool = True,
         name_map: dict[str, str] | None = None,
         type_map: dict[type, type] | None = None,
+        overwrite: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Executes the export process for the subject.
@@ -98,6 +101,7 @@ class SubjectExporter(BaseExporter):
             inner: Determines if the inner objects (e.g., sessions) will be exported.
             name_map: A mapping of original names to new names.
             type_map: A mapping of object types to exporter types.
+            overwrite: Determines if existing files will be overwritten.
             **kwargs: Additional keyword arguments.
         """
         if name is None:
@@ -106,6 +110,11 @@ class SubjectExporter(BaseExporter):
         new_path = path / name
         new_path.mkdir(exist_ok=True)
         if files or files is None:
-            self.export_files(path=new_path, name=name, files=files)
+            self.export_files(
+                path=new_path,
+                name=name,
+                files=None if isinstance(files, bool) else files,
+                overwrite=overwrite,
+            )
         if inner:
-            self.export_sessions(path=new_path, name_map=name_map)
+            self.export_sessions(path=new_path, name_map=name_map, type_map=type_map, overwrite=overwrite)

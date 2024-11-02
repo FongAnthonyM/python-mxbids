@@ -32,7 +32,7 @@ class ModalityImporter(BaseImporter):
         self,
         path: Path,
         file_maps: bool | list[ImportFileMap, ...] | None = True,
-        override: bool | None = None,
+        overwrite: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Executes the import process for the modality.
@@ -40,7 +40,7 @@ class ModalityImporter(BaseImporter):
         Args:
             path: The root path the files to import.
             file_maps: A list of file maps which contain the path information and a callable which imports the file.
-            override: Determines if the files should be overridden if they already exist.
+            overwrite: Determines if the files should be overridden if they already exist.
             **kwargs: Additional keyword arguments.
         """
         self.bids_object.create(build=False)
@@ -48,5 +48,5 @@ class ModalityImporter(BaseImporter):
             self.import_files(
                 path=path,
                 file_maps=None if isinstance(file_maps, bool) else file_maps,
-                override=override,
+                overwrite=overwrite,
             )

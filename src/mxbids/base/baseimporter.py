@@ -42,7 +42,7 @@ class BaseImporter(BaseObject):
         bids_object: The mxbids object to import to.
         file_maps: A list of file maps which contain the path information and a callable which imports the file.
         inner_maps: The list of maps which map inner objects created from this import and importers for those objects.
-        override: Determines if the files should be overridden if they already exist.
+        overwrite: Determines if the files should be overridden if they already exist.
         init: Determines if the object will construct. Defaults to True.
         **kwargs: Additional keyword arguments.
     """
@@ -53,7 +53,7 @@ class BaseImporter(BaseObject):
     default_inner_importer: tuple[type["BaseImporter"], dict[str, Any]]
     file_maps: list[ImportFileMap, ...] = []
     inner_maps: list[ImportInnerMap, ...] = []
-    override: bool = False
+    overwrite: bool = False
 
     bids_object: Any = None
 
@@ -64,7 +64,7 @@ class BaseImporter(BaseObject):
         bids_object: Any = None,
         file_maps: list[ImportFileMap, ...] | None = None,
         inner_maps: list[ImportInnerMap, ...] | None = None,
-        override: bool | None = None,
+        overwrite: bool | None = None,
         *,
         init: bool = True,
         **kwargs: Any,
@@ -82,7 +82,7 @@ class BaseImporter(BaseObject):
                 bids_object=bids_object,
                 file_maps=file_maps,
                 inner_maps=inner_maps,
-                override=override,
+                overwrite=overwrite,
                 **kwargs,
             )
 
@@ -93,7 +93,7 @@ class BaseImporter(BaseObject):
         bids_object: Any = None,
         file_maps: list[ImportFileMap, ...] | None = None,
         inner_maps: list[ImportInnerMap, ...] | None = None,
-        override: bool | None = None,
+        overwrite: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
@@ -102,7 +102,7 @@ class BaseImporter(BaseObject):
             bids_object: The mxbids object to import to.
             file_maps: A list of file maps which contain the path information and a callable which imports the file.
             inner_maps: The list of maps which map inner objects created from this import and importers for those objects.
-            override: Determines if the files should be overridden if they already exist.
+            overwrite: Determines if the files should be overridden if they already exist.
             **kwargs: Additional keyword arguments.
         """
         if bids_object is not None:
@@ -116,8 +116,8 @@ class BaseImporter(BaseObject):
             self.inner_maps.clear()
             self.inner_maps.extend(inner_maps)
 
-        if override is not None:
-            self.override = override
+        if overwrite is not None:
+            self.overwrite = overwrite
 
         super().construct(**kwargs)
 
@@ -125,21 +125,21 @@ class BaseImporter(BaseObject):
         self,
         path: Path,
         file_maps: list[ImportFileMap, ...] | None = None,
-        override: bool | None = None,
+        overwrite: bool | None = None,
     ) -> None:
         """Imports files from the specified path.
 
         Args:
             path: The root path of the files to import.
             file_maps: A list of file maps which contain the path information and a callable which imports the file.
-            override: Determines if the files should be overridden if they already exist.
+            overwrite: Determines if the files should be overridden if they already exist.
         """
         if file_maps is None:
             file_maps = self.file_maps
 
-        for suffix, extension, relative_paths, import_call, i_override, i_kwargs in file_maps:
+        for suffix, extension, relative_paths, import_call, i_overwrite, i_kwargs in file_maps:
             new_path = self.bids_object.path / f"{self.bids_object.full_name}_{suffix}{extension}"
-            over = override if override is not None else (i_override if i_override is not None else self.override)
+            over = overwrite if overwrite is not None else (i_overwrite if i_overwrite is not None else self.overwrite)
             if not new_path.exists() or over:
                 for relative_path in relative_paths:
                     if relative_path is not None:
@@ -156,11 +156,11 @@ class BaseImporter(BaseObject):
                         break
 
     @abstractmethod
-    def execute_import(self, path: Path, override: bool | None = None, **kwargs: Any) -> None:
+    def execute_import(self, path: Path, overwrite: bool | None = None, **kwargs: Any) -> None:
         """Abstract method to execute the import process.
 
         Args:
             path: The root path the files to import.
-            override: Determines if the files should be overridden if they already exist.
+            overwrite: Determines if the files should be overridden if they already exist.
             **kwargs: Additional keyword arguments.
         """
