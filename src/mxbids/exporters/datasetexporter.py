@@ -118,7 +118,7 @@ class DatasetExporter(BaseExporter):
         if name is None:
             name = self.bids_object.full_name
 
-        new_path = path / name
+        new_path = path if name is None else path / name
         new_path.mkdir(exist_ok=True)
         if files or files is None:
             self.export_files(

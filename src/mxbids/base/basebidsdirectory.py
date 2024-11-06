@@ -415,6 +415,8 @@ class BaseBIDSDirectory(DispatchableComposite):
         Returns:
             The required importer.
         """
+        if kwargs is None:
+            kwargs = {}
         importer_, d_kwargs = self.importers.get(name, (None, {}))
         if importer_ is None or overwrite:
             self.importers[name] = (importer, kwargs)
@@ -471,6 +473,8 @@ class BaseBIDSDirectory(DispatchableComposite):
         Returns:
             The required exporter.
         """
+        if kwargs is None:
+            kwargs = {}
         exporter_, d_kwargs = self.exporters.get(name, (None, {}))
         if exporter_ is None or overwrite:
             self.exporters[name] = (exporter, kwargs)

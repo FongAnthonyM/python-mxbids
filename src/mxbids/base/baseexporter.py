@@ -142,7 +142,8 @@ class BaseExporter(BaseObject):
 
     def export_files(
         self,
-        path: Path, name: str | None = None,
+        path: Path,
+        name: str | None = None,
         files: set[str, ...] | None = None,
         overwrite: bool = False
     ) -> None:

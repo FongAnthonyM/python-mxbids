@@ -99,13 +99,15 @@ class SessionExporter(BaseExporter):
             **kwargs: Additional keyword arguments.
         """
         if name is None:
-            name = self.bids_object.full_name
+            name = self.bids_object.full_name.split('_')[1]
 
-        new_path = path / name.split('_')[1]
+        new_path = path / name
+        new_path.mkdir(exist_ok=True)
         if files or files is None:
+            new_name = f"{path.parts[-1]}_{name}"
             self.export_files(
                 path=new_path,
-                name=name,
+                name=new_name,
                 files=None if isinstance(files, bool) else files,
                 overwrite=overwrite,
             )
