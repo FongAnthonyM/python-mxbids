@@ -33,6 +33,7 @@ class SessionExporter(BaseExporter):
         path: Path,
         name_map: dict[str, str] | None = None,
         type_map: dict[type, type] | None = None,
+        overwrite: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Exports modalities from the session to the specified path.
@@ -41,6 +42,7 @@ class SessionExporter(BaseExporter):
             path: The root path to export the modalities to.
             name_map: A mapping of original modality names to new names.
             type_map: A mapping of modality types to exporter types.
+            overwrite: Determines if existing files will be overwritten.
             **kwargs: Additional keyword arguments.
         """
         if name_map is None:
@@ -57,21 +59,21 @@ class SessionExporter(BaseExporter):
                 # Export using correct exporter type
                 exporter, d_kwargs = type_map.get(type(modality), (None, {}))
                 if exporter is not None:
-                    exporter(bids_object=modality, **d_kwargs).execute_export(path, name=new_name)
+                    exporter(bids_object=modality, **d_kwargs).execute_export(path, name=new_name, overwrite=overwrite)
                 else:
                     exporter, d_kwargs = self.default_type
                     m_exporter = modality.require_exporter(self.exporter_name, exporter, **d_kwargs)
-                    m_exporter.execute_export(path, name=new_name)
+                    m_exporter.execute_export(path, name=new_name, overwrite=overwrite)
         else:
             for modality in self.bids_object.modalities.values():
                 # Export using correct exporter type
                 exporter, d_kwargs = type_map.get(type(modality), (None, {}))
                 if exporter is not None:
-                    exporter(bids_object=modality, **d_kwargs).execute_export(path)
+                    exporter(bids_object=modality, **d_kwargs).execute_export(path, overwrite=overwrite)
                 else:
                     exporter, d_kwargs = self.default_type
                     m_exporter = modality.require_exporter(self.exporter_name, exporter, **d_kwargs)
-                    m_exporter.execute_export(path)
+                    m_exporter.execute_export(path, overwrite=overwrite)
 
     def execute_export(
         self,
@@ -81,6 +83,7 @@ class SessionExporter(BaseExporter):
         inner: bool = True,
         name_map: dict[str, str] | None = None,
         type_map: dict[type, type] | None = None,
+        overwrite: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Executes the export process for the session.
@@ -92,14 +95,21 @@ class SessionExporter(BaseExporter):
             inner: Determines if the inner objects (e.g., modalities) will be exported.
             name_map: A mapping of original names to new name.
             type_map: A mapping of object types to exporter types.
+            overwrite: Determines if existing files will be overwritten.
             **kwargs: Additional keyword arguments.
         """
         if name is None:
-            name = self.bids_object.full_name
+            name = self.bids_object.full_name.split('_')[1]
 
-        new_path = path / name.split('_')[1]
+        new_path = path / name
         new_path.mkdir(exist_ok=True)
         if files or files is None:
-            self.export_files(path=new_path, name=name, files=files)
+            new_name = f"{path.parts[-1]}_{name}"
+            self.export_files(
+                path=new_path,
+                name=new_name,
+                files=None if isinstance(files, bool) else files,
+                overwrite=overwrite,
+            )
         if inner:
-            self.export_modalities(path=new_path, name_map=name_map)
+            self.export_modalities(path=new_path, name_map=name_map, type_map=type_map, overwrite=overwrite)

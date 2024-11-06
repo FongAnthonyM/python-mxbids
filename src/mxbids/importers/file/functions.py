@@ -16,6 +16,7 @@ __email__ = __email__
 from collections.abc import Iterable
 from json import dump, load
 from pathlib import Path
+from shutil import copy2
 import subprocess
 from warnings import warn
 
@@ -26,7 +27,7 @@ from warnings import warn
 
 # Definitions #
 # Functions #
-def strip_json(old_path: Path, new_path: Path, strip: Iterable[str] = ()) -> None:
+def strip_json_copy(old_path: Path, new_path: Path, strip: Iterable[str] = ()) -> None:
     """Strips specified fields from a JSON file and writes the cleaned data to a new file.
 
     Args:
@@ -57,4 +58,14 @@ def command_copy(old_path: Path, new_path: Path, command: str) -> None:
     subprocess.run([command, str(old_path), str(new_path)])
 
 
-__all__ = ["strip_json", "command_copy"]
+def python_copy(old_path: Path, new_path: Path) -> None:
+    """Copies a file using the shutil.copy2 function.
+
+    Args:
+        old_path: The path to the original file.
+        new_path: The path to the new file.
+    """
+    copy2(old_path, new_path)
+
+
+__all__ = ["strip_json_copy", "command_copy", "python_copy"]

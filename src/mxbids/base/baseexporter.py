@@ -37,6 +37,7 @@ class BaseExporter(BaseObject):
         default_type: The default type for the exporter.
         name_map: A mapping of names.
         type_map: A mapping of types.
+        overwrite: Determines if the files should be overridden if they already exist.
         bids_object: The mxbids object to export.
 
     Args:
@@ -58,6 +59,7 @@ class BaseExporter(BaseObject):
     default_type: tuple[type["BaseExporter"], dict[str, Any]]
     name_map: dict[str, str] = {}
     type_map: dict[type, (type, dict[str, Any])] = {}
+    overwrite: bool = False
 
     bids_object: Any = None
 
@@ -138,13 +140,20 @@ class BaseExporter(BaseObject):
 
         super().construct(**kwargs)
 
-    def export_files(self, path: Path, name: str | None = None, files: set[str, ...] | None = None) -> None:
+    def export_files(
+        self,
+        path: Path,
+        name: str | None = None,
+        files: set[str, ...] | None = None,
+        overwrite: bool = False
+    ) -> None:
         """Exports files to the specified path.
 
         Args:
             path: The destination root path for the files to be exported to.
             name: The new name for the exported files. Defaults to None, retaining its name.
             files: The set of file names to export. Defaults to None, exporting all files.
+            overwrite: Determines if the files should be overridden if they already exist.
         """
         if files is None:
             files = self.export_file_names
@@ -155,7 +164,7 @@ class BaseExporter(BaseObject):
             exclude = any(n in old_name for n in self.export_exclude_names)
             if include and not exclude:
                 new_path = path / (old_name if name is None else old_name.replace(self.bids_object.full_name, name))
-                if not new_path.exists():
+                if not new_path.exists() or (overwrite if overwrite is not None else self.overwrite):
                     shutil.copy(old_path, new_path)
 
     @abstractmethod

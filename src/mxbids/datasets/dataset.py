@@ -261,13 +261,14 @@ class Dataset(BaseBIDSDirectory):
         super().construct(**kwargs)
 
         # Create
-        if self.path is not None and not self.path.exists() and create:
+        if self.path is not None and create:
             self.create(build=build)
 
     def build(self) -> None:
         """Builds the dataset."""
         super().build()
-        self.create_description()
+        if not self.description_path.exists():
+            self.create_description()
 
     def load(
         self,

@@ -20,18 +20,6 @@ from mxbids.modalities import DWI
 from mxbids.modalities.importers.base import DWIImporter
 
 
-def strip_json(old_path, new_path):
-    if not old_path.exists():
-        print(f"could not find {old_path}")
-        return
-    with open(old_path, "r") as f:
-        data_orig = load(f)
-
-    data_clean = {key: value for key, value in data_orig.items() if key not in TO_STRIP}
-
-    with open(new_path, "w") as f:
-        dump(data_clean, f)
-
 
 TO_STRIP = [
     "InstitutionName",

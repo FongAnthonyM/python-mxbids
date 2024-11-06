@@ -137,7 +137,7 @@ class BaseBIDSDirectory(DispatchableComposite):
 
     name: str | None = None
 
-    _meta_information: dict[str, Any] | None = None
+    _meta_information: dict[str, Any]
 
     importers: MutableMapping[str, tuple[type[BaseImporter], dict[str, Any]]]
     exporters: MutableMapping[str, tuple[type[BaseExporter], dict[str, Any]]]
@@ -173,10 +173,7 @@ class BaseBIDSDirectory(DispatchableComposite):
     @property
     def meta_information(self) -> dict[str, Any]:
         """The meta information of this BIDS Directory."""
-        if self._meta_information is None:
-            return self.default_meta_information.copy()
-        else:
-            return self._meta_information
+        return self._meta_information
 
     # Magic Methods #
     # Construction/Destruction
@@ -194,6 +191,8 @@ class BaseBIDSDirectory(DispatchableComposite):
         **kwargs: Any,
     ) -> None:
         # New Attributes #
+        self._meta_information = {}
+
         self.importers = dict(self.importers)
         self.exporters = dict(self.exporters)
 
@@ -272,7 +271,8 @@ class BaseBIDSDirectory(DispatchableComposite):
     def build(self) -> None:
         """Builds the BIDS directory's structure and default files."""
         self.update_meta_information_component_types()
-        self.create_meta_information()
+        if not self.meta_information_path.exists():
+            self.create_meta_information()
 
     def load(self, **kwargs: Any) -> None:
         """Loads the BIDS directory.
@@ -294,7 +294,8 @@ class BaseBIDSDirectory(DispatchableComposite):
             The name of the components, their types, and arguments.
         """
         component_types = {}
-        for name, info in self.meta_information["Python"]["ComponentTypes"].items():
+        meta_info = self._meta_information or self.default_meta_information
+        for name, info in meta_info["Python"]["ComponentTypes"].items():
             if (item := self.component_types_register.get_class(info["Namespace"], info["Class"], None)) is None:
                 try:
                     import_module(info["Module"])
@@ -339,8 +340,8 @@ class BaseBIDSDirectory(DispatchableComposite):
     # Meta Information
     def create_meta_information(self) -> None:
         """Creates meta information file and saves the meta information."""
-        if self._meta_information is None:
-            self._meta_information = deepcopy(self.default_meta_information)
+        if not self._meta_information:
+            self._meta_information.update(deepcopy(self.default_meta_information))
         with self.meta_information_path.open(self._mode) as file:
             json.dump(self._meta_information, file)
 
@@ -350,13 +351,12 @@ class BaseBIDSDirectory(DispatchableComposite):
         Returns:
             The modality meta information.
         """
-        if self._meta_information is None:
-            self._meta_information = {}
-        else:
+        if self._meta_information:
             self._meta_information.clear()
 
-        with self.meta_information_path.open("r") as file:
-            self._meta_information.update(json.load(file))
+        if self.meta_information_path.exists():
+            with self.meta_information_path.open("r") as file:
+                self._meta_information.update(json.load(file))
 
         return self._meta_information
 
@@ -377,7 +377,7 @@ class BaseBIDSDirectory(DispatchableComposite):
             The created importer.
         """
         importer, d_kwargs = self.importers[name]
-        return importer(dataset=self, **(d_kwargs | kwargs))
+        return importer(bids_object=self, **(d_kwargs | kwargs))
 
     def add_importer(
         self,
@@ -415,6 +415,8 @@ class BaseBIDSDirectory(DispatchableComposite):
         Returns:
             The required importer.
         """
+        if kwargs is None:
+            kwargs = {}
         importer_, d_kwargs = self.importers.get(name, (None, {}))
         if importer_ is None or overwrite:
             self.importers[name] = (importer, kwargs)
@@ -471,6 +473,8 @@ class BaseBIDSDirectory(DispatchableComposite):
         Returns:
             The required exporter.
         """
+        if kwargs is None:
+            kwargs = {}
         exporter_, d_kwargs = self.exporters.get(name, (None, {}))
         if exporter_ is None or overwrite:
             self.exporters[name] = (exporter, kwargs)

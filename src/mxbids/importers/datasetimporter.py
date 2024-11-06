@@ -19,7 +19,7 @@ from typing import Any
 # Third-Party Packages #
 
 # Local Packages #
-from ..base import BaseImporter
+from ..base import BaseImporter, ImportFileMap, ImportInnerMap
 
 
 # Definitions #
@@ -31,7 +31,8 @@ class DatasetImporter(BaseImporter):
     def import_subjects(
         self,
         path: Path,
-        inner_maps: list[tuple[str, type, dict[str, Any], str, type, dict[str, Any]]] | None = None,
+        inner_maps: list[ImportInnerMap, ...] | None = None,
+        overwrite: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Imports subjects from the given path.
@@ -39,12 +40,13 @@ class DatasetImporter(BaseImporter):
         Args:
             path: The root path the files to import.
             inner_maps: The list of maps which map inner objects created from this import and importers for those objects.
+            overwrite: Determines if the files should be overridden if they already exist.
             **kwargs: Additional keyword arguments.
         """
         if inner_maps is None:
             inner_maps = self.inner_maps
 
-        for s_name, s_type, s_kwargs, i_name, importer, i_kwargs in inner_maps:
+        for s_name, s_type, i_name, stem, importer, i_overwrite, s_kwargs, i_kwargs in inner_maps:
             # Correct names
             if s_name[:4] == "sub-":
                 s_name = s_name[4:]
@@ -63,13 +65,15 @@ class DatasetImporter(BaseImporter):
             if importer is None:
                 importer, i_kwargs = self.default_inner_importer
 
-            importer(bids_object=subject, **i_kwargs).execute_import(path)
+            over = overwrite if overwrite is not None else i_overwrite
+            importer(bids_object=subject, **i_kwargs).execute_import(path.joinpath(stem), overwrite=over)
 
     def execute_import(
         self,
         path: Path,
-        file_maps: bool | list[tuple] | None = True,
-        inner_maps: bool | list[tuple[str, type, dict[str, Any], str, type, dict[str, Any]]] | None = True,
+        file_maps: bool | list[ImportFileMap, ...] | None = True,
+        inner_maps: bool | list[ImportInnerMap, ...] | None = True,
+        overwrite: bool | None = None,
         **kwargs: Any,
     ) -> None:
         """Executes the import process for the dataset.
@@ -78,10 +82,19 @@ class DatasetImporter(BaseImporter):
             path: The root path the files to import.
             file_maps: A list of file maps which contain the path information and a callable which imports the file.
             inner_maps: The list of maps which map inner objects created from this import and importers for those objects.
+            overwrite: Determines if the files should be overridden if they already exist.
             **kwargs: Additional keyword arguments.
         """
         self.bids_object.create(build=False)
         if file_maps or file_maps is None:
-            self.import_files(path=path, file_maps=file_maps)
+            self.import_files(
+                path=path,
+                file_maps=None if isinstance(file_maps, bool) else file_maps,
+                overwrite=overwrite,
+            )
         if inner_maps or inner_maps is None:
-            self.import_subjects(path=path, inner_maps=inner_maps)
+            self.import_subjects(
+                path=path,
+                inner_maps=None if isinstance(inner_maps, bool) else inner_maps,
+                overwrite=overwrite,
+            )
