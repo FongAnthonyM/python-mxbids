@@ -50,7 +50,7 @@ class Dataset(BaseBIDSDirectory):
         importers: Importers for the dataset.
         exporters: Exporters for the dataset.
         _description: Description of the dataset.
-        participant_fields: Fields for participants.
+        _participant_fields: Fields for participants.
         participants: DataFrame containing participant information.
         subjects: Dictionary of subjects in the dataset.
 
@@ -62,7 +62,9 @@ class Dataset(BaseBIDSDirectory):
         create: Determines if the dataset will be created if it does not exist.
         build: Determines if the dataset will be built after creation.
         load: Determines if the dataset will be load.
-        subjects_to_load: List of subjects to load.
+        load_subjects: Determines if the subjects will be loaded can provide a list of subjects to load.
+        load_sessions: Determines if the sessions will be loaded can provide a list of sessions to load.
+        load_modalities: Determines if the modalities will be loaded can provide a list of modalities to load.
         init: Determines if the object will construct. Defaults to True.
         **kwargs: Additional keyword arguments.
     """
@@ -186,8 +188,10 @@ class Dataset(BaseBIDSDirectory):
         mode: str | None = None,
         create: bool = False,
         build: bool = True,
-        load: bool = False,
-        subjects_to_load: list[str] | None = None,
+        load: bool = True,
+        load_subjects: bool | Iterable[str] = False,
+        load_sessions: bool | Iterable[str] = False,
+        load_modalities: bool | Iterable[str] = True,
         *,
         init: bool = True,
         **kwargs: Any,
@@ -208,7 +212,9 @@ class Dataset(BaseBIDSDirectory):
                 create=create,
                 build=build,
                 load=load,
-                subjects_to_load=subjects_to_load,
+                load_subjects=load_subjects,
+                load_sessions=load_sessions,
+                load_modalities=load_modalities,
                 **kwargs,
             )
 
@@ -222,8 +228,10 @@ class Dataset(BaseBIDSDirectory):
         mode: str | None = None,
         create: bool = False,
         build: bool = True,
-        load: bool = False,
-        subjects_to_load: list[str] | None = None,
+        load: bool = True,
+        load_subjects: bool | Iterable[str] = False,
+        load_sessions: bool | Iterable[str] = False,
+        load_modalities: bool | Iterable[str] = True,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
@@ -236,7 +244,9 @@ class Dataset(BaseBIDSDirectory):
             create: Determines if the dataset will be created if it does not exist.
             build: Determines if the dataset will be built after creation.
             load: Determines if the dataset will be load.
-            subjects_to_load: List of subjects to load.
+            load_subjects: Determines if the subjects will be loaded, can provide a list of subjects to load.
+            load_sessions: Determines if the sessions will be loaded, can provide a list of sessions to load.
+            load_modalities: Determines if the modalities will be loaded, can provide a list of modalities to load.
             kwargs: The keyword arguments for inheritance if any.
         """
         if name is not None:
@@ -254,8 +264,13 @@ class Dataset(BaseBIDSDirectory):
             self.path = parent_path / name
 
         # Load
-        if self.path is not None and self.path.exists() and load:
-            self.load(subjects_to_load)
+        if self.path is not None and self.path.exists():
+            if load:
+                self.load()
+
+            if load_subjects:
+                names = None if isinstance(load_subjects, bool) else load_subjects
+                self.load_subjects(names=names, load_sessions=load_sessions, load_modalities=load_modalities)
 
         # Construct Parent #
         super().construct(**kwargs)
@@ -286,7 +301,12 @@ class Dataset(BaseBIDSDirectory):
             kwargs: Additional keyword arguments.
         """
         super().load()
-        self.load_subjects(names, mode, load)
+        if self.description_path.exists():
+            self.load_description()
+        if self.participant_fields_path.exists():
+            self.load_participant_fields()
+        if self.participants_path.exists():
+            self.load_participants()
 
     # Description
     def create_description(self) -> None:
@@ -426,23 +446,43 @@ class Dataset(BaseBIDSDirectory):
         )
         return new_subject
 
-    def load_subjects(self, names: Iterable[str] | None = None, mode: str | None = None, load: bool = True) -> None:
+    def load_subjects(
+        self,
+        names: Iterable[str] | None = None,
+        mode: str | None = None,
+        load: bool = True,
+        clear: bool = True,
+        **kwargs: Any,
+    ) -> None:
         """Loads subjects in this dataset.
 
         Args:
             names: Names of subjects to load. The default None loads all subjects.
             mode: File mode to set the subjects to.
             load: Determines if the subjects will be loaded.
+            clear: Determines if the subjects will be cleared before loading.
+            kwargs: Keyword arguments for the subjects.
         """
         if mode is None:
             mode = self._mode
-        self.subjects.clear()
+
+        if clear:
+            self.subjects.clear()
 
         # Create path iterator
         if names is None:
-            paths = (p for p in self.path.iterdir() if p.is_dir())
+            names_ = self.path.iterdir()
         else:
-            paths = (self.path / n for n in names)
+            names_ = (self.path / (n if n[:4] == "sub-" else f"sub-{n}") for n in names)
+
+        paths = (p for p in names_ if p.is_dir())
 
         # Use an iterator to load subjects
-        self.subjects.update((s.name, s) for p in paths if (s := Subject(path=p, mode=mode, load=load)) is not None)
+        kwargs_ = {"mode": mode, "load": load} | kwargs
+        self.subjects.update((s.name, s) for p in paths if (s := Subject(path=p, **kwargs_)) is not None)
+
+    def print_children(self, indent: int = 0) -> None:
+        """Prints the children of the dataset."""
+        print(f"{' ' * indent}Dataset: {self.name}")
+        for s in self.subjects.values():
+            s.print_children(indent=indent + 4)

@@ -264,22 +264,30 @@ class BaseBIDSDirectory(DispatchableComposite):
         Args:
             build: Whether to build the directory after creation. Defaults to True.
         """
-        self.path.mkdir(exist_ok=True)
-        if build:
-            self.build()
+        if self._mode in {'w', 'w+', 'a', 'a+'}:
+            self.path.mkdir(exist_ok=True)
+            if build:
+                self.build()
+        else:
+            raise FileNotFoundError(f"Mode must be set to write or append when creating a BIDS directory.")
 
     def build(self) -> None:
         """Builds the BIDS directory's structure and default files."""
+        if not self._meta_information:
+            self._meta_information.update(deepcopy(self.default_meta_information))
         self.update_meta_information_component_types()
         if not self.meta_information_path.exists():
             self.create_meta_information()
 
-    def load(self, **kwargs: Any) -> None:
+    def load(self, exists_warn: bool = True, **kwargs: Any) -> None:
         """Loads the BIDS directory.
 
         Args:
+            exists_warn: Determines if the exists warning should be shown. Defaults to True.
             **kwargs: Additional keyword arguments.
         """
+        if exists_warn and (self.path is None or not self.path.exists()):
+            warn("A BIDS directory could not be loaded, either the path is not set or does not exist.")
         self.load_meta_information()
 
     # Components
@@ -340,10 +348,13 @@ class BaseBIDSDirectory(DispatchableComposite):
     # Meta Information
     def create_meta_information(self) -> None:
         """Creates meta information file and saves the meta information."""
-        if not self._meta_information:
-            self._meta_information.update(deepcopy(self.default_meta_information))
-        with self.meta_information_path.open(self._mode) as file:
-            json.dump(self._meta_information, file)
+        if self._mode in {'w', 'w+', 'a', 'a+'}:
+            if not self._meta_information:
+                self._meta_information.update(deepcopy(self.default_meta_information))
+            with self.meta_information_path.open(self._mode) as file:
+                json.dump(self._meta_information, file)
+        else:
+            raise FileNotFoundError(f"Mode must be set to write or append when creating a meta information file.")
 
     def load_meta_information(self) -> dict:
         """Loads the meta information from the file.

@@ -55,7 +55,8 @@ class Subject(BaseBIDSDirectory):
         create: Determines if this subject will be created if it does not exist.
         build: Determines if the directory will be built after creation.
         load: Determines if the subject will load.
-        sessions_to_load: The list of session names to load.
+        load_sessions: Determines if the sessions will be loaded from the subject's directory.
+        load_modalities: Determines if the modalities will be loaded from the subject's directory.
         init: Determines if this object will construct.
         **kwargs: Additional keyword arguments.
     """
@@ -69,6 +70,7 @@ class Subject(BaseBIDSDirectory):
     default_meta_information: ClassVar[dict[str, Any]] = deepcopy(BaseBIDSDirectory.default_meta_information) | {
         "Type": "Subject",
     }
+    default_sessions: ClassVar[dict[str, tuple[type[Session], dict[str, Any]]]] = {}
 
     # Class Methods #
     @classmethod
@@ -137,13 +139,14 @@ class Subject(BaseBIDSDirectory):
         create: bool = False,
         build: bool = True,
         load: bool = True,
-        sessions_to_load: list[str] | None = None,
+        load_sessions: bool | Iterable[str] = False,
+        load_modalities: bool | Iterable[str] = False,
         *,
         init: bool = True,
         **kwargs: Any,
     ) -> None:
         # New Attributes #
-        self.sessions: dict[str, Session] = {}
+        self.sessions = {}
 
         # Parent Attributes #
         super().__init__(init=False)
@@ -158,7 +161,8 @@ class Subject(BaseBIDSDirectory):
                 create=create,
                 build=build,
                 load=load,
-                sessions_to_load=sessions_to_load,
+                load_sessions=load_sessions,
+                load_modalities=load_modalities,
                 **kwargs,
             )
 
@@ -173,7 +177,8 @@ class Subject(BaseBIDSDirectory):
         create: bool = False,
         build: bool = True,
         load: bool = True,
-        sessions_to_load: list[str] | None = None,
+        load_sessions: bool | Iterable[str] = False,
+        load_modalities: bool | Iterable[str] = False,
         **kwargs: Any,
     ) -> None:
         """Constructs this object.
@@ -186,7 +191,8 @@ class Subject(BaseBIDSDirectory):
             create: Determines if this subject will be created if it does not exist.
             build: Determines if the directory will be built after creation.
             load: Determines if the sessions will be loaded from the subject's directory.
-            sessions_to_load: The list of session names to load.
+            load_sessions: Determines if the sessions will be loaded from the subject's directory.
+            load_modalities: Determines if the modalities will be loaded from the subject's directory.
             **kwargs: Additional keyword arguments.
         """
         # Name and Path Resolution
@@ -206,8 +212,18 @@ class Subject(BaseBIDSDirectory):
             self.path = (parent_path if isinstance(parent_path, Path) else Path(parent_path)) / self.directory_name
 
         # Load
-        if self.path is not None and self.path.exists() and load:
-            self.load(sessions_to_load)
+        if self.path is not None and self.path.exists():
+            if not load and not load_sessions:
+                self.construct_sessions()
+            else:
+                if load:
+                    self.load()
+
+                if load_sessions:
+                    names = None if isinstance(load_sessions, bool) else load_sessions
+                    self.load_sessions(names=names, load_modalities=load_modalities)
+        else:
+            self.construct_sessions()
 
         # Construct Parent
         super().construct(**kwargs)
@@ -216,17 +232,20 @@ class Subject(BaseBIDSDirectory):
         if self.path is not None and not self.path.exists() and create:
             self.create(build=build)
 
-    def load(
-        self,
-        names: Iterable[str] | None = None,
-        mode: str | None = None,
-        load: bool = True,
-        **kwargs: Any,
-    ) -> None:
-        super().load()
-        self.load_sessions(names, mode, load)
+    def build(self) -> None:
+        """Builds the subject and its sessions."""
+        super().build()
+        self.build_sessions()
 
     # Session
+    def construct_sessions(self) -> None:
+        """Constructs the default sessions for the session."""
+        # Use an iterator to construct sessions
+        self.sessions.update(
+            (name, session_type(name=name, parent_path=self.path, mode=self._mode, **kwargs))  # The key and session to add
+            for name, (session_type, kwargs) in self.default_sessions.items()  # Iterate over the default sessions
+        )
+
     def generate_latest_session_name(self, prefix: str | None = None, digits: int | None = None) -> str:
         """Generates a session name for a new latest session.
 
@@ -281,24 +300,49 @@ class Subject(BaseBIDSDirectory):
         )
         return new_session
 
-    def load_sessions(self, names: Iterable[str] | None = None, mode: str | None = None, load: bool = True) -> None:
+    def load_sessions(
+        self,
+        names: Iterable[str] | None = None,
+        mode: str | None = None,
+        load: bool = True,
+        clear: bool = True,
+        **kwargs: Any,
+    ) -> None:
         """Loads sessions in this subject.
 
         Args:
             names: Names of sessions to load. The default None loads all sessions.
             mode: File mode to set the sessions to.
             load: Determines if the sessions will be loaded.
+            clear: Determines if the sessions will be cleared before loading.
+            kwargs: Keyword arguments for the sessions.
         """
         if mode is None:
             mode = self._mode
-        self.sessions.clear()
+
+        if clear:
+            self.sessions.clear()
 
         # Create path iterator
         if names is None:
-            paths = (p for p in self.path.iterdir() if p.is_dir())
+            names_ = self.path.iterdir()
         else:
-            paths = (self.path / n for n in names)
+            names_ = (self.path / (n if n[:4] == "ses-" else f"ses-{n}") for n in names)
+
+        paths = (p for p in names_ if p.is_dir())
 
         # Use an iterator to load sessions
-        self.sessions.update((s.name, s) for p in paths if (s := Session(path=p, mode=mode, load=load)) is not None)
+        kwargs_ = {"mode": mode, "load": load} | kwargs
+        self.sessions.update((s.name, s) for p in paths if (s := Session(path=p, **kwargs_)) is not None)
+
+    def build_sessions(self) -> None:
+        """Builds the sessions in this subject."""
+        for session in self.sessions.values():
+            session.create(build=True)
+
+    def print_children(self, indent: int = 0) -> None:
+        """Prints the children of the subject."""
+        print(f"{' ' * indent}{self.name}")
+        for s in self.sessions.values():
+            s.print_children(indent=indent + 4)
     

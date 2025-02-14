@@ -55,7 +55,7 @@ class Session(BaseBIDSDirectory):
         create: Determines if this session will be created if it does not exist.
         build: Determines if the directory will be built after creation.
         load: Determines if the modalities will be loaded from the session's directory.
-        modalities_to_load: List of modality names to load.
+        load_modalities: Determines if the modalities will be loaded from the session's directory.
         init: Determines if this object will construct.
         **kwargs: Additional keyword arguments.
     """
@@ -139,7 +139,7 @@ class Session(BaseBIDSDirectory):
         create: bool = False,
         build: bool = True,
         load: bool = True,
-        modalities_to_load: list[str] | None = None,
+        load_modalities: bool | Iterable[str] = True,
         *,
         init: bool = True,
         **kwargs: Any,
@@ -160,7 +160,7 @@ class Session(BaseBIDSDirectory):
                 create=create,
                 build=build,
                 load=load,
-                modalities_to_load=modalities_to_load,
+                load_modalities=load_modalities,
                 **kwargs,
             )
 
@@ -175,7 +175,7 @@ class Session(BaseBIDSDirectory):
         create: bool = False,
         build: bool = True,
         load: bool = True,
-        modalities_to_load: list[str] | None = None,
+        load_modalities: bool | Iterable[str] = True,
         **kwargs: Any,
     ) -> None:
         """Constructs the Session object.
@@ -188,7 +188,7 @@ class Session(BaseBIDSDirectory):
             create: Determines if this session will be created if it does not exist.
             build: Determines if the directory will be built after creation.
             load: Determines if the session will load.
-            modalities_to_load: List of modality names to load.
+            load_modalities: Determines if the modalities will be loaded from the session's directory.
             **kwargs: Additional keyword arguments.
         """
         # Name and Path Resolution
@@ -212,9 +212,15 @@ class Session(BaseBIDSDirectory):
     
         # Load
         if self.path is not None and self.path.exists():
-            if load:
-                self.load()
-        elif create:
+            if not load and not load_modalities:
+                self.construct_modalities()
+            else:
+                if load:
+                    self.load()
+
+                if load_modalities:
+                    self.load_modalities(None if load_modalities is True else load_modalities)
+        else:
             self.construct_modalities()
     
         # Construct Parent
@@ -228,24 +234,6 @@ class Session(BaseBIDSDirectory):
         """Builds the session and its modalities."""
         super().build()
         self.build_modalities()
-    
-    def load(
-        self,
-        names: Iterable[str] | None = None,
-        mode: str | None = None,
-        load: bool = True,
-        **kwargs: Any,
-    ) -> None:
-        """Loads the session and its modalities.
-    
-        Args:
-            names: Names of modalities to load.
-            mode: File mode to set the modalities to.
-            load: Whether to load the modalities.
-            **kwargs: Additional keyword arguments.
-        """
-        super().load()
-        self.load_modalities(names, mode, load)
     
     # Modalities
     def construct_modalities(self) -> None:
@@ -299,17 +287,28 @@ class Session(BaseBIDSDirectory):
         for modality in self.modalities.values():
             modality.create(build=True)
 
-    def load_modalities(self, names: Iterable[str] | None = None, mode: str | None = None, load: bool = True) -> None:
+    def load_modalities(
+        self,
+        names: Iterable[str] | None = None,
+        mode: str | None = None,
+        load: bool = True,
+        clear: bool = True,
+        **kwargs: Any,
+    ) -> None:
         """Loads modalities in this subject.
 
         Args:
             names: Names of modalities to load. The default None loads all modalities.
             mode: File mode to set the modalities to.
             load: Determines if the modalities will be loaded.
+            clear: Determines if the modalities will be cleared before loading.
+            kwargs: Keyword arguments for the modalities.
         """
         if mode is None:
             mode = self._mode
-        self.modalities.clear()
+
+        if clear:
+            self.modalities.clear()
 
         # Create path iterator
         if names is None:
@@ -318,4 +317,11 @@ class Session(BaseBIDSDirectory):
             paths = (self.path / n for n in names)
 
         # Use an iterator to load modalities
-        self.modalities.update((m.name, m) for p in paths if (m := Modality(path=p, mode=mode, load=load)) is not None)
+        kwargs_ = {"mode": mode, "load": load} | kwargs
+        self.modalities.update((m.name, m) for p in paths if (m := Modality(path=p, **kwargs_)) is not None)
+
+    def print_children(self, indent: int = 0) -> None:
+        """Prints the children of the session."""
+        print(f"{' ' * indent}{self.name}")
+        for m in self.modalities.values():
+            print(f"{' ' * (indent + 4)}{m.name}")

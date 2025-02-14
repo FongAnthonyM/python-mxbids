@@ -27,7 +27,7 @@ from ..modality import Modality
 # Definitions #
 # Classes #
 class CT(Modality):
-    """A Session which contains a CDFS as part of its structure.
+    """A CT Modality which contains
 
     Class Attributes:
         namespace: The namespace of the subclass.
