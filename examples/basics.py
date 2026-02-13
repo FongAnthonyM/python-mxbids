@@ -3,6 +3,22 @@ This tutorial demonstrates the complete workflow for creating, managing, and loa
 using the MXBIDS library. It includes steps for setting up a dataset, creating subjects, sessions, 
 and modalities, and showcases how to load and manage these objects either directly or hierarchically.
 """
+
+# Header #
+__package_name__ = "mxbids"
+
+__author__ = "Anthony Fong"
+__credits__ = ["Anthony Fong"]
+__maintainer__ = "Anthony Fong"
+__email__ = ""
+
+__copyright__ = "Copyright 2022, Anthony Fong"
+__license__ = "MIT"
+
+__version__ = "0.3.0"
+__status__ = "Development Status :: 3 - Alpha"
+
+
 # Imports #
 # Standard Libraries
 import pathlib
@@ -239,4 +255,3 @@ del dataset
 print("\nSpecific Loading")
 dataset = Dataset(path, load_subjects=["S0000", "Subject0002"], load_sessions=["SubjectImagingOnly"], load_modalities=["anat"])
 dataset.print_children()
-

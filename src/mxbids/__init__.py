@@ -1,20 +1,17 @@
-""" __init__.py
-
+"""__init__.py
+Package initialization for mxbids.
 """
-# Package Header #
-from .header import *
 
 # Header #
-__author__ = __author__
-__credits__ = __credits__
-__maintainer__ = __maintainer__
-__email__ = __email__
+__package_name__ = "mxbids"
+
+__author__ = "Anthony Fong"
+__credits__ = ["Anthony Fong"]
+__copyright__ = "Copyright 2022, Anthony Fong"
+__license__ = "MIT"
+
+__version__ = "0.3.0"
 
 
 # Imports #
 # Local Packages #
-from .base import *
-from .modalities import *
-from .sessions import *
-from .subjects import *
-from .datasets import *

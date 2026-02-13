@@ -1,13 +1,14 @@
-Reference
-=========
+API Reference
+=============
 
 .. contents::
     :local:
+    :depth: 2
     :backlinks: none
 
 
-mxbids.__main__
---------------------
+mxbids
+---------------------------
 
-.. automodule:: mxbids.__main__
+.. automodule:: mxbids
    :members:
